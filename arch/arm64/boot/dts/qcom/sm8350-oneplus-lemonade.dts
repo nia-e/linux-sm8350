@@ -2,6 +2,7 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/regulator/qcom,rpmh-regulator.h>
+#include <dt-bindings/dma/qcom-gpi.h>
 #include "sm8350.dtsi"
 #include "pm8350.dtsi"
 #include "pm8350b.dtsi"
@@ -345,12 +346,46 @@
 &tlmm {
 	gpio-reserved-ranges = <52 8>;
 
-	ts_int_default: ts-int-default {
-		pins = "gpio39";
-		function = "gpio";
-		drive-strength = <8>;
-		bias-disabled;
-		input-enable;
+	// ts_int_default: ts-int-default {
+	// 	pins = "gpio39";
+	// 	function = "gpio";
+	// 	drive-strength = <8>;
+	// 	bias-disabled;
+	// 	input-enable;
+	// };
+	tp_irq_active: tp_irq_active {
+		mux {
+			pins = "gpio23";
+			function = "gpio";
+		};
+		config {
+			pins = "gpio23";
+			drive-strength = <8>;
+			bias-disable;
+			input-enable;
+		};
+	};
+	tp_rst_active: tp_rst_active {
+		mux {
+			pins = "gpio22";
+			function = "gpio";
+		};
+		config {
+			pins = "gpio22";
+			drive-strength = <8>;
+			bias-pull-up;
+		};
+	};
+	tp_rst_suspend: tp_rst_suspend {
+		mux {
+			pins = "gpio22";
+			function = "gpio";
+		};
+		config {
+			pins = "gpio22";
+			drive-strength = <8>;
+			bias-pull-down;
+		};
 	};
 };
 
@@ -444,7 +479,7 @@
 &soc {
 	gpi_dma0: dma-controller@900000 {
 		compatible = "qcom,sm8350-gpi-dma";
-		#dma-cells = <5>;
+		#dma-cells = <3>;
 		reg = <0x0 0x900000 0x0 0x60000>;
 		interrupts = <GIC_SPI 244 IRQ_TYPE_LEVEL_HIGH>,
 					<GIC_SPI 245 IRQ_TYPE_LEVEL_HIGH>,
@@ -457,32 +492,34 @@
 					<GIC_SPI 252 IRQ_TYPE_LEVEL_HIGH>,
 					<GIC_SPI 253 IRQ_TYPE_LEVEL_HIGH>,
 					<GIC_SPI 254 IRQ_TYPE_LEVEL_HIGH>,
-					<GIC_SPI 255 IRQ_TYPE_LEVEL_HIGH>;
-		dma-channels = <12>;
+					<GIC_SPI 255 IRQ_TYPE_LEVEL_HIGH>,
+				    <GIC_SPI 256 IRQ_TYPE_LEVEL_HIGH>;
+		dma-channels = <15>;
 		dma-channel-mask = <0x7e>;
 		iommus = <&apps_smmu 0x5b6 0x0>;
 		status = "ok";
 	};
 };
 
-// &i2c4 {
-// 	status = "ok";
-// 	clock-frequency = <400000>;
-// 	dmas = <&gpi_dma0 0 5 QCOM_GPI_I2C>,
-// 		<&gpi_dma0 1 5 QCOM_GPI_I2C>;
-// 	dma-names = "tx", "rx";
+&i2c4 {
+	status = "ok";
+	clock-frequency = <400000>;
+	dmas = <&gpi_dma0 0 4 QCOM_GPI_I2C>,
+		<&gpi_dma0 1 4 QCOM_GPI_I2C>;
+	dma-names = "tx", "rx";
 
-// 	touchscreen@48 {
-// 		compatible = "samsung,s6sy761";
-// 		reg = <0x48>;
-// 		interrupt-parent = <&tlmm>;
-// 		interrupts = <39 0x2008>;
+	touchscreen@48 {
+		compatible = "samsung,s6sy761";
+		reg = <0x48>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <23 0x2008>;
 
-// 		vdd-supply = <&vreg_l1c_1p8>;
-// 		avdd-supply = <&vreg_l3c_3p0>;
+		vdd-supply = <&vreg_l1c_1p8>;
+		avdd-supply = <&vreg_l3c_3p0>;
 
-// 		pinctrl-names = "default";
-// 		pinctrl-0 = <&ts_int_default>;
-
-// 	};
-// };
+		pinctrl-names = "default";
+		// pinctrl-names = "default", "sleep";
+		pinctrl-0 = <&tp_irq_active &tp_rst_active>;
+		// pinctrl-1 = <&tp_rst_suspend>;
+	};
+};
