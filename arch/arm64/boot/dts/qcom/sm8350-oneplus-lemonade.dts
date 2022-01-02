@@ -395,10 +395,10 @@
 
 &usb_1_dwc3 {
 	dr_mode = "peripheral";
+
+	maximum-speed = "high-speed";
 	phys = <&usb_1_hsphy>;
 	phy-names = "usb2-phy";
-	tx-fifo-resize;
-	maximum-speed = "super-speed";
 };
 
 &usb_1_hsphy {
