@@ -346,51 +346,30 @@
 &tlmm {
 	gpio-reserved-ranges = <52 8>;
 
-	// ts_int_default: ts-int-default {
-	// 	pins = "gpio39";
-	// 	function = "gpio";
-	// 	drive-strength = <8>;
-	// 	bias-disabled;
-	// 	input-enable;
-	// };
 	tp_irq_active: tp_irq_active {
-		mux {
-			pins = "gpio23";
-			function = "gpio";
-		};
-		config {
-			pins = "gpio23";
-			drive-strength = <8>;
-			bias-disable;
-			input-enable;
-		};
+		pins = "gpio23";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-disable;
+		input-enable;
 	};
 	tp_rst_active: tp_rst_active {
-		mux {
-			pins = "gpio22";
-			function = "gpio";
-		};
-		config {
-			pins = "gpio22";
-			drive-strength = <8>;
-			bias-pull-up;
-		};
+		pins = "gpio22";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-pull-up;
 	};
-	tp_rst_suspend: tp_rst_suspend {
-		mux {
-			pins = "gpio22";
-			function = "gpio";
-		};
-		config {
-			pins = "gpio22";
-			drive-strength = <8>;
-			bias-pull-down;
-		};
-	};
-};
-
-&uart2 {
-	status = "okay";
+	// tp_rst_suspend: tp_rst_suspend {
+	// 	mux {
+	// 		pins = "gpio22";
+	// 		function = "gpio";
+	// 	};
+	// 	config {
+	// 		pins = "gpio22";
+	// 		drive-strength = <8>;
+	// 		bias-pull-down;
+	// 	};
+	// };
 };
 
 &ufs_mem_hc {
@@ -515,8 +494,7 @@
 		vdd-supply = <&vreg_l1c_1p8>;
 		avdd-supply = <&vreg_l3c_3p0>;
 
-		pinctrl-names = "default";
-		// pinctrl-names = "default", "sleep";
+		pinctrl-names = "default"; //, "sleep";
 		pinctrl-0 = <&tp_irq_active &tp_rst_active>;
 		// pinctrl-1 = <&tp_rst_suspend>;
 	};
