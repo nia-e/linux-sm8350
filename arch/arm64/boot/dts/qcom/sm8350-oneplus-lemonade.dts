@@ -3,6 +3,11 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/regulator/qcom,rpmh-regulator.h>
 #include <dt-bindings/dma/qcom-gpi.h>
+#include <dt-bindings/iio/qcom,spmi-adc7-pm8350.h>
+#include <dt-bindings/iio/qcom,spmi-adc7-pm8350b.h>
+#include <dt-bindings/iio/qcom,spmi-adc7-pmk8350.h>
+#include <dt-bindings/iio/qcom,spmi-adc7-pmr735a.h>
+#include <dt-bindings/iio/qcom,spmi-adc7-pmr735b.h>
 #include "sm8350.dtsi"
 #include "pm8350.dtsi"
 #include "pm8350b.dtsi"
@@ -338,6 +343,10 @@
 	status = "okay";
 };
 
+&qupv3_id_2 {
+	status = "okay";
+};
+
 &slpi {
 	status = "okay";
 	firmware-name = "qcom/sm8350/slpi.mbn";
@@ -453,6 +462,137 @@
 	memory-region = <&pil_ipa_fw_mem>;
 };
 
+&pon_pwrkey {
+	status = "okay";
+};
+
+&pmk8350_rtc {
+	status = "okay";
+};
+
+&pmk8350_vadc {
+	/* PMK8350 Channel nodes */
+	pmk8350_ref_gnd {
+		reg = <PMK8350_ADC7_REF_GND>;
+		label = "pmk8350_ref_gnd";
+		qcom,pre-scaling = <1 1>;
+	};
+
+	pmk8350_vref_1p25 {
+		reg = <PMK8350_ADC7_1P25VREF>;
+		label = "pmk8350_vref_1p25";
+		qcom,pre-scaling = <1 1>;
+	};
+
+	pmk8350_die_temp {
+		reg = <PMK8350_ADC7_DIE_TEMP>;
+		label = "pmk8350_die_temp";
+		qcom,pre-scaling = <1 1>;
+	};
+
+	pmk8350_xo_therm {
+		reg = <PMK8350_ADC7_AMUX_THM1_100K_PU>;
+		label = "pmk8350_xo_therm";
+		qcom,ratiometric;
+		qcom,hw-settle-time = <200>;
+		qcom,pre-scaling = <1 1>;
+	};
+
+	/* PM8350 Channel nodes */
+	pm8350_ref_gnd {
+		reg = <PM8350_ADC7_REF_GND>;
+		label = "pm8350_ref_gnd";
+		qcom,pre-scaling = <1 1>;
+	};
+
+	pm8350_vref_1p25 {
+		reg = <PM8350_ADC7_1P25VREF>;
+		label = "pm8350_vref_1p25";
+		qcom,pre-scaling = <1 1>;
+	};
+
+	pm8350_die_temp {
+		reg = <PM8350_ADC7_DIE_TEMP>;
+		label = "pm8350_die_temp";
+		qcom,pre-scaling = <1 1>;
+	};
+
+	pm8350_vph_pwr {
+		reg = <PM8350_ADC7_VPH_PWR>;
+		label = "pm8350_vph_pwr";
+		qcom,pre-scaling = <1 3>;
+	};
+
+	/* PM8350b Channel nodes */
+	pm8350b_ref_gnd {
+		reg = <PM8350B_ADC7_REF_GND>;
+		label = "pm8350b_ref_gnd";
+		qcom,pre-scaling = <1 1>;
+	};
+
+	pm8350b_vref_1p25 {
+		reg = <PM8350B_ADC7_1P25VREF>;
+		label = "pm8350b_vref_1p25";
+		qcom,pre-scaling = <1 1>;
+	};
+
+	pm8350b_die_temp {
+		reg = <PM8350B_ADC7_DIE_TEMP>;
+		label = "pm8350b_die_temp";
+		qcom,pre-scaling = <1 1>;
+	};
+
+	pm8350b_vph_pwr {
+		reg = <PM8350B_ADC7_VPH_PWR>;
+		label = "pm8350b_vph_pwr";
+		qcom,pre-scaling = <1 3>;
+	};
+
+	pm8350b_vbat_sns {
+		reg = <PM8350B_ADC7_VBAT_SNS>;
+		label = "pm8350b_vbat_sns";
+		qcom,pre-scaling = <1 3>;
+	};
+
+	/* PMR735a Channel nodes */
+	pmr735a_ref_gnd {
+		reg = <PMR735A_ADC7_REF_GND>;
+		label = "pmr735a_ref_gnd";
+		qcom,pre-scaling = <1 1>;
+	};
+
+	pmr735a_vref_1p25 {
+		reg = <PMR735A_ADC7_1P25VREF>;
+		label = "pmr735a_vref_1p25";
+		qcom,pre-scaling = <1 1>;
+	};
+
+	pmr735a_die_temp {
+		reg = <PMR735A_ADC7_DIE_TEMP>;
+		label = "pmr735a_die_temp";
+		qcom,pre-scaling = <1 1>;
+	};
+
+	/* PMR735b Channel nodes */
+	pmr735b_ref_gnd {
+		reg = <PMR735B_ADC7_REF_GND>;
+		label = "pmr735b_ref_gnd";
+		qcom,pre-scaling = <1 1>;
+	};
+
+	pmr735b_vref_1p25 {
+		reg = <PMR735B_ADC7_1P25VREF>;
+		label = "pmr735b_vref_1p25";
+		qcom,pre-scaling = <1 1>;
+	};
+
+	pmr735b_die_temp {
+		reg = <PMR735B_ADC7_DIE_TEMP>;
+		label = "pmr735b_die_temp";
+		qcom,pre-scaling = <1 1>;
+	};
+};
+
 &soc {
 	gpi_dma0: dma-controller@900000 {
 		compatible = "qcom,sm8350-gpi-dma";
@@ -495,7 +635,7 @@
 		avdd-supply = <&vreg_l3c_3p0>;
 
 		pinctrl-names = "default"; //, "sleep";
-		pinctrl-0 = <&tp_irq_active &tp_rst_active>;
+		pinctrl-0 = <&tp_rst_active &tp_irq_active>;
 		// pinctrl-1 = <&tp_rst_suspend>;
 	};
 };
