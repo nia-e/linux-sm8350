@@ -379,6 +379,37 @@
 	// 		bias-pull-down;
 	// 	};
 	// };
+
+	fp_irq_init: fp_irq_init {
+		pins = "gpio38";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+		input-enable;
+	};
+	
+	fp_vdd_init: fp_vdd_init {
+		pins = "gpio166";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-pull-up;
+		output-high;
+	};
+
+	fp_id0_init: fp_id0_init {
+		pins = "gpio77";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+		input-enable;
+	};
+
+	fp_reset_init: fp_reset_init {
+		pins = "gpio28";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-pull-up;
+	};
 };
 
 &ufs_mem_hc {
@@ -470,7 +501,35 @@
 	status = "okay";
 };
 
+&pm8350c_gpios {
+	batt_btb_adc_default: batt_btb_adc_default {
+		pins = "gpio2";
+		function = "normal";
+		bias-pull-up;
+		bias-high-impedance;
+	};
+
+	gpio1_adc_default: gpio1_adc_default {
+		pins = "gpio1"; /* GPIO 1 */
+		function = "normal"; /* normal */
+		//bias-pull-up;
+		bias-high-impedance;
+		bias-disable;
+	};
+
+	gpio3_adc_default: gpio3_adc_default {
+		pins = "gpio3"; /* GPIO 3 */
+		function = "normal"; /* normal */
+		//bias-pull-up;
+		bias-high-impedance;
+		bias-disable;
+	};
+};
+
 &pmk8350_vadc {
+	pinctrl-names = "default";
+	pinctrl-0 = <&batt_btb_adc_default &gpio1_adc_default &gpio3_adc_default>;
+
 	/* PMK8350 Channel nodes */
 	pmk8350_ref_gnd {
 		reg = <PMK8350_ADC7_REF_GND>;
@@ -629,13 +688,13 @@
 		compatible = "samsung,s6sy761";
 		reg = <0x48>;
 		interrupt-parent = <&tlmm>;
-		interrupts = <23 0x2008>;
+		interrupts = <23 0x2008>, <22 0x00>, <74 0x00>;
 
 		vdd-supply = <&vreg_l1c_1p8>;
 		avdd-supply = <&vreg_l3c_3p0>;
 
 		pinctrl-names = "default"; //, "sleep";
-		pinctrl-0 = <&tp_rst_active &tp_irq_active>;
+		pinctrl-0 = <&tp_rst_active &tp_irq_active &fp_vdd_init &fp_id0_init &fp_reset_init>;
 		// pinctrl-1 = <&tp_rst_suspend>;
 	};
 };
