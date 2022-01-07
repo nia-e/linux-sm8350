@@ -498,6 +498,7 @@
 	status = "okay";
 
 	memory-region = <&pil_ipa_fw_mem>;
+	firmware-name = "qcom/ipa_fws.mbn";
 };
 
 &pon_pwrkey {
