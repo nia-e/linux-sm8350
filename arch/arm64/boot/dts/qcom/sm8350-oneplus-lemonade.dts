@@ -512,3 +512,21 @@
 &pmk8350_rtc {
 	status = "okay";
 };
+
+&i2c2 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	bat: battery {
+		compatible = "simple-battery";
+		voltage-min-design-microvolt = <3200000>;
+		energy-full-design-microwatt-hours = <15840000>;
+		charge-full-design-microamp-hours = <2225000>;
+	};
+
+	bq27541: fuel-gauge@55 {
+		compatible = "ti,bq27541";
+		reg = <0x55>;
+		monitored-battery = <&bat>;
+	};
+};
