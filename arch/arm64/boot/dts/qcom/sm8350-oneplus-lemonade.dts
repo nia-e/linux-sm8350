@@ -85,7 +85,7 @@
 
 &adsp {
 	status = "okay";
-	firmware-name = "qcom/sm8350/adsp.mbn";
+	firmware-name = "postmarketos/adsp.mbn";
 };
 
 &reserved_memory {
@@ -353,12 +353,12 @@
 
 &cdsp {
 	status = "okay";
-	firmware-name = "qcom/sm8350/cdsp.mbn";
+	firmware-name = "postmarketos/cdsp.mbn";
 };
 
 &mpss {
 	status = "okay";
-	firmware-name = "qcom/sm8350/modem.mbn";
+	firmware-name = "postmarketos/modem.mbn";
 };
 
 &qupv3_id_0 {
@@ -375,7 +375,7 @@
 
 &slpi {
 	status = "okay";
-	firmware-name = "qcom/sm8350/slpi.mbn";
+	firmware-name = "postmarketos/slpi.mbn";
 };
 
 &tlmm {
@@ -498,7 +498,7 @@
 	status = "okay";
 
 	memory-region = <&pil_ipa_fw_mem>;
-	firmware-name = "qcom/ipa_fws.mbn";
+	firmware-name = "postmarketos/ipa_fws.mbn";
 };
 
 &pon_pwrkey {
