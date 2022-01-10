@@ -535,34 +535,34 @@
 };
 
 &tlmm {
-    rf_cable_ant0_active: rf_cable_ant0_active {
+	rf_cable_ant0_active: rf_cable_ant0_active {
 		pins = "gpio165";
 		function = "gpio";
 		drive-strength = <2>;
 		bias-pull-up;
-    };
+	};
 	rf_cable_ant1_active: rf_cable_ant1_active {
 		pins = "gpio27";
 		function = "gpio";
 		drive-strength = <2>;
 		bias-pull-up;
-    };
+	};
 	rf_cable_ant2_active: rf_cable_ant2_active {
 		pins = "gpio92";
 		function = "gpio";
 		drive-strength = <2>;
 		bias-pull-up;
-    };
+	};
 	rf_cable_ant3_active: rf_cable_ant3_active {
-        pins = "gpio44";
-        function = "gpio";
-		drive-strength = <2>;
-		bias-pull-up;
-    };
-	rf_cable_ant7_active: rf_cable_ant7_active {
-        pins = "gpio155";
+		pins = "gpio44";
 		function = "gpio";
 		drive-strength = <2>;
 		bias-pull-up;
-    };
+	};
+	rf_cable_ant7_active: rf_cable_ant7_active {
+		pins = "gpio155";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
+	};
 };
