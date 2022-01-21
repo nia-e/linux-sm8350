@@ -358,7 +358,7 @@
 
 &mpss {
 	status = "okay";
-	firmware-name = "postmarketos/modem.mbn", "postmarketos/mcfg_hw.mbn";
+	firmware-name = "postmarketos/modem.mbn";
 
 	pinctrl-names = "default";
 	pinctrl-1 = <&rf_cable_ant0_active &rf_cable_ant1_active &rf_cable_ant2_active &rf_cable_ant3_active &rf_cable_ant7_active>;
