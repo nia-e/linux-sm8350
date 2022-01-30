@@ -75,7 +75,7 @@
 
 			vdd-supply = <&vreg_l8c_1p8>;
 			avdd-supply = <&vreg_l3c_3p0>;
-
+	
 			pinctrl-names = "default", "sleep";
 			pinctrl-0 = <&tp_rst_active &tp_irq_active>;
 			pinctrl-1 = <&tp_rst_suspend>;
@@ -502,10 +502,6 @@
 
 	memory-region = <&pil_ipa_fw_mem>;
 	firmware-name = "postmarketos/ipa_fws.mbn";
-};
-
-&pon_pwrkey {
-	status = "okay";
 };
 
 &pmk8350_adc_tm {
