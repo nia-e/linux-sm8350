@@ -430,7 +430,7 @@ static void run_fsm(void)
 		int stop = 0;
 
 		if (!phase) {
-			pd_current = pd_req->rq_disk->private_data;
+			pd_current = pd_req->q->disk->private_data;
 			pi_current = pd_current->pi;
 			phase = do_pd_io_start;
 		}
@@ -492,7 +492,7 @@ static enum action do_pd_io_start(void)
 	case REQ_OP_WRITE:
 		pd_block = blk_rq_pos(pd_req);
 		pd_count = blk_rq_cur_sectors(pd_req);
-		if (pd_block + pd_count > get_capacity(pd_req->rq_disk))
+		if (pd_block + pd_count > get_capacity(pd_req->q->disk))
 			return Fail;
 		pd_run = blk_rq_sectors(pd_req);
 		pd_buf = bio_data(pd_req->bio);
@@ -501,6 +501,8 @@ static enum action do_pd_io_start(void)
 			return do_pd_read_start();
 		else
 			return do_pd_write_start();
+	default:
+		break;
 	}
 	return Fail;
 }
@@ -781,7 +783,7 @@ static int pd_special_command(struct pd_unit *disk,
 	req = blk_mq_rq_to_pdu(rq);
 
 	req->func = func;
-	blk_execute_rq(disk->gd, rq, 0);
+	blk_execute_rq(rq, false);
 	blk_mq_free_request(rq);
 	return 0;
 }
@@ -943,7 +945,7 @@ static int pd_probe_drive(struct pd_unit *disk, int autoprobe, int port,
 		goto cleanup_disk;
 	return 0;
 cleanup_disk:
-	blk_cleanup_disk(disk->gd);
+	put_disk(disk->gd);
 put_disk:
 	put_disk(p);
 	disk->gd = NULL;
@@ -1018,7 +1020,7 @@ static void __exit pd_exit(void)
 		if (p) {
 			disk->gd = NULL;
 			del_gendisk(p);
-			blk_cleanup_disk(p);
+			put_disk(p);
 			blk_mq_free_tag_set(&disk->tag_set);
 			pi_release(disk->pi);
 		}

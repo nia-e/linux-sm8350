@@ -98,6 +98,11 @@ enum dmub_asic {
 	DMUB_ASIC_DCN303,
 	DMUB_ASIC_DCN31,
 	DMUB_ASIC_DCN31B,
+	DMUB_ASIC_DCN314,
+	DMUB_ASIC_DCN315,
+	DMUB_ASIC_DCN316,
+	DMUB_ASIC_DCN32,
+	DMUB_ASIC_DCN321,
 	DMUB_ASIC_MAX,
 };
 
@@ -241,6 +246,9 @@ struct dmub_srv_hw_params {
 	bool power_optimization;
 	bool dpia_supported;
 	bool disable_dpia;
+	bool usb4_cm_version;
+	bool fw_in_system_memory;
+	bool dpia_hpd_int_enable_supported;
 };
 
 /**
@@ -305,6 +313,9 @@ struct dmub_srv_hw_funcs {
 			      const struct dmub_window *cw0,
 			      const struct dmub_window *cw1);
 
+	void (*backdoor_load_zfb_mode)(struct dmub_srv *dmub,
+			      const struct dmub_window *cw0,
+			      const struct dmub_window *cw1);
 	void (*setup_windows)(struct dmub_srv *dmub,
 			      const struct dmub_window *cw2,
 			      const struct dmub_window *cw3,
@@ -360,6 +371,9 @@ struct dmub_srv_hw_funcs {
 
 	uint32_t (*get_gpint_dataout)(struct dmub_srv *dmub);
 
+	void (*configure_dmub_in_system_memory)(struct dmub_srv *dmub);
+	void (*clear_inbox0_ack_register)(struct dmub_srv *dmub);
+	uint32_t (*read_inbox0_ack_register)(struct dmub_srv *dmub);
 	void (*send_inbox0_cmd)(struct dmub_srv *dmub, union dmub_inbox0_data_register data);
 	uint32_t (*get_current_time)(struct dmub_srv *dmub);
 
@@ -405,10 +419,12 @@ struct dmub_srv {
 	/* private: internal use only */
 	const struct dmub_srv_common_regs *regs;
 	const struct dmub_srv_dcn31_regs *regs_dcn31;
+	const struct dmub_srv_dcn32_regs *regs_dcn32;
 
 	struct dmub_srv_base_funcs funcs;
 	struct dmub_srv_hw_funcs hw_funcs;
 	struct dmub_rb inbox1_rb;
+	uint32_t inbox1_last_wptr;
 	/**
 	 * outbox1_rb is accessed without locks (dal & dc)
 	 * and to be used only in dmub_srv_stat_get_notification()
@@ -426,6 +442,7 @@ struct dmub_srv {
 
 	/* Feature capabilities reported by fw */
 	struct dmub_feature_caps feature_caps;
+	struct dmub_visual_confirm_color visual_confirm_color;
 };
 
 /**
@@ -734,6 +751,45 @@ bool dmub_srv_get_outbox0_msg(struct dmub_srv *dmub, struct dmcub_trace_buf_entr
 bool dmub_srv_get_diagnostic_data(struct dmub_srv *dmub, struct dmub_diagnostic_data *diag_data);
 
 bool dmub_srv_should_detect(struct dmub_srv *dmub);
+
+/**
+ * dmub_srv_send_inbox0_cmd() - Send command to DMUB using INBOX0
+ * @dmub: the dmub service
+ * @data: the data to be sent in the INBOX0 command
+ *
+ * Send command by writing directly to INBOX0 WPTR
+ *
+ * Return:
+ *   DMUB_STATUS_OK - success
+ *   DMUB_STATUS_INVALID - hw_init false or hw function does not exist
+ */
+enum dmub_status dmub_srv_send_inbox0_cmd(struct dmub_srv *dmub, union dmub_inbox0_data_register data);
+
+/**
+ * dmub_srv_wait_for_inbox0_ack() - wait for DMUB to ACK INBOX0 command
+ * @dmub: the dmub service
+ * @timeout_us: the maximum number of microseconds to wait
+ *
+ * Wait for DMUB to ACK the INBOX0 message
+ *
+ * Return:
+ *   DMUB_STATUS_OK - success
+ *   DMUB_STATUS_INVALID - hw_init false or hw function does not exist
+ *   DMUB_STATUS_TIMEOUT - wait for ack timed out
+ */
+enum dmub_status dmub_srv_wait_for_inbox0_ack(struct dmub_srv *dmub, uint32_t timeout_us);
+
+/**
+ * dmub_srv_wait_for_inbox0_ack() - clear ACK register for INBOX0
+ * @dmub: the dmub service
+ *
+ * Clear ACK register for INBOX0
+ *
+ * Return:
+ *   DMUB_STATUS_OK - success
+ *   DMUB_STATUS_INVALID - hw_init false or hw function does not exist
+ */
+enum dmub_status dmub_srv_clear_inbox0_ack(struct dmub_srv *dmub);
 
 #if defined(__cplusplus)
 }

@@ -725,7 +725,7 @@ static int bnxt_re_register_ib(struct bnxt_re_dev *rdev)
 
 	/* ib device init */
 	ibdev->node_type = RDMA_NODE_IB_CA;
-	strlcpy(ibdev->node_desc, BNXT_RE_DESC " HCA",
+	strscpy(ibdev->node_desc, BNXT_RE_DESC " HCA",
 		strlen(BNXT_RE_DESC) + 5);
 	ibdev->phys_port_cnt = 1;
 
@@ -893,7 +893,6 @@ static int bnxt_re_srqn_handler(struct bnxt_qplib_nq *nq,
 	struct bnxt_re_srq *srq = container_of(handle, struct bnxt_re_srq,
 					       qplib_srq);
 	struct ib_event ib_event;
-	int rc = 0;
 
 	ib_event.device = &srq->rdev->ibdev;
 	ib_event.element.srq = &srq->ib_srq;
@@ -907,7 +906,7 @@ static int bnxt_re_srqn_handler(struct bnxt_qplib_nq *nq,
 		(*srq->ib_srq.event_handler)(&ib_event,
 					     srq->ib_srq.srq_context);
 	}
-	return rc;
+	return 0;
 }
 
 static int bnxt_re_cqn_handler(struct bnxt_qplib_nq *nq,

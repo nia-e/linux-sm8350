@@ -191,7 +191,8 @@ static int smc_nl_ueid_dumpinfo(struct sk_buff *skb, u32 portid, u32 seq,
 			  flags, SMC_NETLINK_DUMP_UEID);
 	if (!hdr)
 		return -ENOMEM;
-	snprintf(ueid_str, sizeof(ueid_str), "%s", ueid);
+	memcpy(ueid_str, ueid, SMC_MAX_EID_LEN);
+	ueid_str[SMC_MAX_EID_LEN] = 0;
 	if (nla_put_string(skb, SMC_NLA_EID_TABLE_ENTRY, ueid_str)) {
 		genlmsg_cancel(skb, hdr);
 		return -EMSGSIZE;
@@ -252,7 +253,8 @@ int smc_nl_dump_seid(struct sk_buff *skb, struct netlink_callback *cb)
 		goto end;
 
 	smc_ism_get_system_eid(&seid);
-	snprintf(seid_str, sizeof(seid_str), "%s", seid);
+	memcpy(seid_str, seid, SMC_MAX_EID_LEN);
+	seid_str[SMC_MAX_EID_LEN] = 0;
 	if (nla_put_string(skb, SMC_NLA_SEID_ENTRY, seid_str))
 		goto err;
 	read_lock(&smc_clc_eid_table.lock);
@@ -774,7 +776,7 @@ int smc_clc_send_decline(struct smc_sock *smc, u32 peer_diag_info, u8 version)
 	dclc.os_type = version == SMC_V1 ? 0 : SMC_CLC_OS_LINUX;
 	dclc.hdr.typev2 = (peer_diag_info == SMC_CLC_DECL_SYNCERR) ?
 						SMC_FIRST_CONTACT_MASK : 0;
-	if ((!smc->conn.lgr || !smc->conn.lgr->is_smcd) &&
+	if ((!smc_conn_lgr_valid(&smc->conn) || !smc->conn.lgr->is_smcd) &&
 	    smc_ib_is_valid_local_systemid())
 		memcpy(dclc.id_for_peer, local_systemid,
 		       sizeof(local_systemid));
@@ -1021,7 +1023,6 @@ static int smc_clc_send_confirm_accept(struct smc_sock *smc,
 		struct smc_link *link = conn->lnk;
 
 		/* SMC-R specific settings */
-		link = conn->lnk;
 		memcpy(clc->hdr.eyecatcher, SMC_EYECATCHER,
 		       sizeof(SMC_EYECATCHER));
 		clc->hdr.typev1 = SMC_TYPE_R;
@@ -1033,7 +1034,7 @@ static int smc_clc_send_confirm_accept(struct smc_sock *smc,
 		       ETH_ALEN);
 		hton24(clc->r0.qpn, link->roce_qp->qp_num);
 		clc->r0.rmb_rkey =
-			htonl(conn->rmb_desc->mr_rx[link->link_idx]->rkey);
+			htonl(conn->rmb_desc->mr[link->link_idx]->rkey);
 		clc->r0.rmbe_idx = 1; /* for now: 1 RMB = 1 RMBE */
 		clc->r0.rmbe_alert_token = htonl(conn->alert_token_local);
 		switch (clc->hdr.type) {
@@ -1045,8 +1046,10 @@ static int smc_clc_send_confirm_accept(struct smc_sock *smc,
 			break;
 		}
 		clc->r0.rmbe_size = conn->rmbe_size_short;
-		clc->r0.rmb_dma_addr = cpu_to_be64((u64)sg_dma_address
-				(conn->rmb_desc->sgt[link->link_idx].sgl));
+		clc->r0.rmb_dma_addr = conn->rmb_desc->is_vm ?
+			cpu_to_be64((uintptr_t)conn->rmb_desc->cpu_addr) :
+			cpu_to_be64((u64)sg_dma_address
+				    (conn->rmb_desc->sgt[link->link_idx].sgl));
 		hton24(clc->r0.psn, link->psn_initial);
 		if (version == SMC_V1) {
 			clc->hdr.length = htons(SMCR_CLC_ACCEPT_CONFIRM_LEN);

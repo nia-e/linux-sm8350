@@ -242,9 +242,10 @@ static void smc_llc_flow_parallel(struct smc_link_group *lgr, u8 flow_type,
 	}
 	/* drop parallel or already-in-progress llc requests */
 	if (flow_type != msg_type)
-		pr_warn_once("smc: SMC-R lg %*phN dropped parallel "
+		pr_warn_once("smc: SMC-R lg %*phN net %llu dropped parallel "
 			     "LLC msg: msg %d flow %d role %d\n",
 			     SMC_LGR_ID_SIZE, &lgr->id,
+			     lgr->net->net_cookie,
 			     qentry->msg.raw.hdr.common.type,
 			     flow_type, lgr->role);
 	kfree(qentry);
@@ -359,9 +360,10 @@ struct smc_llc_qentry *smc_llc_wait(struct smc_link_group *lgr,
 					   smc_llc_flow_qentry_clr(flow));
 			return NULL;
 		}
-		pr_warn_once("smc: SMC-R lg %*phN dropped unexpected LLC msg: "
+		pr_warn_once("smc: SMC-R lg %*phN net %llu dropped unexpected LLC msg: "
 			     "msg %d exp %d flow %d role %d flags %x\n",
-			     SMC_LGR_ID_SIZE, &lgr->id, rcv_msg, exp_msg,
+			     SMC_LGR_ID_SIZE, &lgr->id, lgr->net->net_cookie,
+			     rcv_msg, exp_msg,
 			     flow->type, lgr->role,
 			     flow->qentry->msg.raw.hdr.flags);
 		smc_llc_flow_qentry_del(flow);
@@ -503,19 +505,22 @@ static int smc_llc_send_confirm_rkey(struct smc_link *send_link,
 		if (smc_link_active(link) && link != send_link) {
 			rkeyllc->rtoken[rtok_ix].link_id = link->link_id;
 			rkeyllc->rtoken[rtok_ix].rmb_key =
-				htonl(rmb_desc->mr_rx[link->link_idx]->rkey);
-			rkeyllc->rtoken[rtok_ix].rmb_vaddr = cpu_to_be64(
-				(u64)sg_dma_address(
-					rmb_desc->sgt[link->link_idx].sgl));
+				htonl(rmb_desc->mr[link->link_idx]->rkey);
+			rkeyllc->rtoken[rtok_ix].rmb_vaddr = rmb_desc->is_vm ?
+				cpu_to_be64((uintptr_t)rmb_desc->cpu_addr) :
+				cpu_to_be64((u64)sg_dma_address
+					    (rmb_desc->sgt[link->link_idx].sgl));
 			rtok_ix++;
 		}
 	}
 	/* rkey of send_link is in rtoken[0] */
 	rkeyllc->rtoken[0].num_rkeys = rtok_ix - 1;
 	rkeyllc->rtoken[0].rmb_key =
-		htonl(rmb_desc->mr_rx[send_link->link_idx]->rkey);
-	rkeyllc->rtoken[0].rmb_vaddr = cpu_to_be64(
-		(u64)sg_dma_address(rmb_desc->sgt[send_link->link_idx].sgl));
+		htonl(rmb_desc->mr[send_link->link_idx]->rkey);
+	rkeyllc->rtoken[0].rmb_vaddr = rmb_desc->is_vm ?
+		cpu_to_be64((uintptr_t)rmb_desc->cpu_addr) :
+		cpu_to_be64((u64)sg_dma_address
+			    (rmb_desc->sgt[send_link->link_idx].sgl));
 	/* send llc message */
 	rc = smc_wr_tx_send(send_link, pend);
 put_out:
@@ -542,7 +547,7 @@ static int smc_llc_send_delete_rkey(struct smc_link *link,
 	rkeyllc->hd.common.llc_type = SMC_LLC_DELETE_RKEY;
 	smc_llc_init_msg_hdr(&rkeyllc->hd, link->lgr, sizeof(*rkeyllc));
 	rkeyllc->num_rkeys = 1;
-	rkeyllc->rkey[0] = htonl(rmb_desc->mr_rx[link->link_idx]->rkey);
+	rkeyllc->rkey[0] = htonl(rmb_desc->mr[link->link_idx]->rkey);
 	/* send llc message */
 	rc = smc_wr_tx_send(link, pend);
 put_out:
@@ -612,9 +617,10 @@ static int smc_llc_fill_ext_v2(struct smc_llc_msg_add_link_v2_ext *ext,
 		if (!buf_pos)
 			break;
 		rmb = buf_pos;
-		ext->rt[i].rmb_key = htonl(rmb->mr_rx[prim_lnk_idx]->rkey);
-		ext->rt[i].rmb_key_new = htonl(rmb->mr_rx[lnk_idx]->rkey);
-		ext->rt[i].rmb_vaddr_new =
+		ext->rt[i].rmb_key = htonl(rmb->mr[prim_lnk_idx]->rkey);
+		ext->rt[i].rmb_key_new = htonl(rmb->mr[lnk_idx]->rkey);
+		ext->rt[i].rmb_vaddr_new = rmb->is_vm ?
+			cpu_to_be64((uintptr_t)rmb->cpu_addr) :
 			cpu_to_be64((u64)sg_dma_address(rmb->sgt[lnk_idx].sgl));
 		buf_pos = smc_llc_get_next_rmb(lgr, &buf_lst, buf_pos);
 		while (buf_pos && !(buf_pos)->used)
@@ -850,9 +856,10 @@ static int smc_llc_add_link_cont(struct smc_link *link,
 		}
 		rmb = *buf_pos;
 
-		addc_llc->rt[i].rmb_key = htonl(rmb->mr_rx[prim_lnk_idx]->rkey);
-		addc_llc->rt[i].rmb_key_new = htonl(rmb->mr_rx[lnk_idx]->rkey);
-		addc_llc->rt[i].rmb_vaddr_new =
+		addc_llc->rt[i].rmb_key = htonl(rmb->mr[prim_lnk_idx]->rkey);
+		addc_llc->rt[i].rmb_key_new = htonl(rmb->mr[lnk_idx]->rkey);
+		addc_llc->rt[i].rmb_vaddr_new = rmb->is_vm ?
+			cpu_to_be64((uintptr_t)rmb->cpu_addr) :
 			cpu_to_be64((u64)sg_dma_address(rmb->sgt[lnk_idx].sgl));
 
 		(*num_rkeys_todo)--;
@@ -1630,7 +1637,7 @@ void smc_llc_send_link_delete_all(struct smc_link_group *lgr, bool ord, u32 rsn)
 	delllc.reason = htonl(rsn);
 
 	for (i = 0; i < SMC_LINKS_PER_LGR_MAX; i++) {
-		if (!smc_link_usable(&lgr->lnk[i]))
+		if (!smc_link_sendable(&lgr->lnk[i]))
 			continue;
 		if (!smc_llc_send_message_wait(&lgr->lnk[i], &delllc))
 			break;
@@ -1816,8 +1823,9 @@ finish:
 
 static void smc_llc_protocol_violation(struct smc_link_group *lgr, u8 type)
 {
-	pr_warn_ratelimited("smc: SMC-R lg %*phN LLC protocol violation: "
-			    "llc_type %d\n", SMC_LGR_ID_SIZE, &lgr->id, type);
+	pr_warn_ratelimited("smc: SMC-R lg %*phN net %llu LLC protocol violation: "
+			    "llc_type %d\n", SMC_LGR_ID_SIZE, &lgr->id,
+			    lgr->net->net_cookie, type);
 	smc_llc_set_termination_rsn(lgr, SMC_LLC_DEL_PROT_VIOL);
 	smc_lgr_terminate_sched(lgr);
 }
@@ -2119,7 +2127,7 @@ void smc_llc_lgr_init(struct smc_link_group *lgr, struct smc_sock *smc)
 	init_waitqueue_head(&lgr->llc_flow_waiter);
 	init_waitqueue_head(&lgr->llc_msg_waiter);
 	mutex_init(&lgr->llc_conf_mutex);
-	lgr->llc_testlink_time = net->ipv4.sysctl_tcp_keepalive_time;
+	lgr->llc_testlink_time = READ_ONCE(net->smc.sysctl_smcr_testlink_time);
 }
 
 /* called after lgr was removed from lgr_list */
@@ -2146,9 +2154,10 @@ int smc_llc_link_init(struct smc_link *link)
 
 void smc_llc_link_active(struct smc_link *link)
 {
-	pr_warn_ratelimited("smc: SMC-R lg %*phN link added: id %*phN, "
+	pr_warn_ratelimited("smc: SMC-R lg %*phN net %llu link added: id %*phN, "
 			    "peerid %*phN, ibdev %s, ibport %d\n",
 			    SMC_LGR_ID_SIZE, &link->lgr->id,
+			    link->lgr->net->net_cookie,
 			    SMC_LGR_ID_SIZE, &link->link_uid,
 			    SMC_LGR_ID_SIZE, &link->peer_link_uid,
 			    link->smcibdev->ibdev->name, link->ibport);
@@ -2164,9 +2173,10 @@ void smc_llc_link_active(struct smc_link *link)
 void smc_llc_link_clear(struct smc_link *link, bool log)
 {
 	if (log)
-		pr_warn_ratelimited("smc: SMC-R lg %*phN link removed: id %*phN"
+		pr_warn_ratelimited("smc: SMC-R lg %*phN net %llu link removed: id %*phN"
 				    ", peerid %*phN, ibdev %s, ibport %d\n",
 				    SMC_LGR_ID_SIZE, &link->lgr->id,
+				    link->lgr->net->net_cookie,
 				    SMC_LGR_ID_SIZE, &link->link_uid,
 				    SMC_LGR_ID_SIZE, &link->peer_link_uid,
 				    link->smcibdev->ibdev->name, link->ibport);

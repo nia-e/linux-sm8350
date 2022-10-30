@@ -228,7 +228,6 @@ static void rgrp_go_inval(struct gfs2_glock *gl, int flags)
 	gfs2_rgrp_brelse(rgd);
 	WARN_ON_ONCE(!(flags & DIO_METADATA));
 	truncate_inode_pages_range(mapping, start, end);
-	set_bit(GLF_INSTANTIATE_NEEDED, &gl->gl_flags);
 }
 
 static void gfs2_rgrp_go_dump(struct seq_file *seq, struct gfs2_glock *gl,
@@ -486,35 +485,33 @@ int gfs2_inode_refresh(struct gfs2_inode *ip)
  * Returns: errno
  */
 
-static int inode_go_instantiate(struct gfs2_holder *gh)
+static int inode_go_instantiate(struct gfs2_glock *gl)
+{
+	struct gfs2_inode *ip = gl->gl_object;
+
+	if (!ip) /* no inode to populate - read it in later */
+		return 0;
+
+	return gfs2_inode_refresh(ip);
+}
+
+static int inode_go_held(struct gfs2_holder *gh)
 {
 	struct gfs2_glock *gl = gh->gh_gl;
-	struct gfs2_sbd *sdp = gl->gl_name.ln_sbd;
 	struct gfs2_inode *ip = gl->gl_object;
 	int error = 0;
 
 	if (!ip) /* no inode to populate - read it in later */
-		goto out;
-
-	error = gfs2_inode_refresh(ip);
-	if (error)
-		goto out;
+		return 0;
 
 	if (gh->gh_state != LM_ST_DEFERRED)
 		inode_dio_wait(&ip->i_inode);
 
 	if ((ip->i_diskflags & GFS2_DIF_TRUNC_IN_PROG) &&
 	    (gl->gl_state == LM_ST_EXCLUSIVE) &&
-	    (gh->gh_state == LM_ST_EXCLUSIVE)) {
-		spin_lock(&sdp->sd_trunc_lock);
-		if (list_empty(&ip->i_trunc_list))
-			list_add(&ip->i_trunc_list, &sdp->sd_trunc_list);
-		spin_unlock(&sdp->sd_trunc_lock);
-		wake_up(&sdp->sd_quota_wait);
-		error = 1;
-	}
+	    (gh->gh_state == LM_ST_EXCLUSIVE))
+		error = gfs2_truncatei_resume(ip);
 
-out:
 	return error;
 }
 
@@ -738,6 +735,7 @@ const struct gfs2_glock_operations gfs2_inode_glops = {
 	.go_inval = inode_go_inval,
 	.go_demote_ok = inode_go_demote_ok,
 	.go_instantiate = inode_go_instantiate,
+	.go_held = inode_go_held,
 	.go_dump = inode_go_dump,
 	.go_type = LM_TYPE_INODE,
 	.go_flags = GLOF_ASPACE | GLOF_LRU | GLOF_LVB,
@@ -764,6 +762,7 @@ const struct gfs2_glock_operations gfs2_freeze_glops = {
 const struct gfs2_glock_operations gfs2_iopen_glops = {
 	.go_type = LM_TYPE_IOPEN,
 	.go_callback = iopen_go_callback,
+	.go_dump = inode_go_dump,
 	.go_demote_ok = iopen_go_demote_ok,
 	.go_flags = GLOF_LRU | GLOF_NONDISK,
 	.go_subclass = 1,

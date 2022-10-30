@@ -1110,23 +1110,14 @@ static const unsigned int sdmmc4_dat0_pins[] = {
 static const unsigned int sdmmc1_comp_pins[] = {
 	TEGRA_PIN_SDMMC1_COMP,
 };
-static const unsigned int sdmmc1_hv_trim_pins[] = {
-	TEGRA_PIN_SDMMC1_HV_TRIM,
-};
 static const unsigned int sdmmc3_comp_pins[] = {
 	TEGRA_PIN_SDMMC3_COMP,
-};
-static const unsigned int sdmmc3_hv_trim_pins[] = {
-	TEGRA_PIN_SDMMC3_HV_TRIM,
 };
 static const unsigned int eqos_comp_pins[] = {
 	TEGRA_PIN_EQOS_COMP,
 };
 static const unsigned int qspi_comp_pins[] = {
 	TEGRA_PIN_QSPI_COMP,
-};
-static const unsigned int sys_reset_n_pins[] = {
-	TEGRA_PIN_SYS_RESET_N,
 };
 static const unsigned int shutdown_n_pins[] = {
 	TEGRA_PIN_SHUTDOWN_N,
@@ -1387,7 +1378,6 @@ static struct tegra_function tegra194_functions[] = {
 		.schmitt_bit = schmitt_b,			\
 		.drvtype_bit = 13,				\
 		.lpdr_bit = e_lpdr,				\
-		.drv_reg = -1,					\
 
 #define drive_touch_clk_pcc4            DRV_PINGROUP_ENTRY_Y(0x2004,	12,	5,	20,	5,	-1,	-1,	-1,	-1,	1)
 #define drive_uart3_rx_pcc6             DRV_PINGROUP_ENTRY_Y(0x200c,	12,	5,	20,	5,	-1,	-1,	-1,	-1,	1)

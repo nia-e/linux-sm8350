@@ -119,14 +119,6 @@ void dpp_read_state(struct dpp *dpp_base,
 	}
 }
 
-/* Program gamut remap in bypass mode */
-void dpp_set_gamut_remap_bypass(struct dcn10_dpp *dpp)
-{
-	REG_SET(CM_GAMUT_REMAP_CONTROL, 0,
-			CM_GAMUT_REMAP_MODE, 0);
-	/* Gamut remap in bypass */
-}
-
 #define IDENTITY_RATIO(ratio) (dc_fixpt_u2d19(ratio) == (1 << 19))
 
 bool dpp1_get_optimal_number_of_taps(
@@ -456,10 +448,11 @@ void dpp1_set_cursor_position(
 			src_y_offset = pos->y - pos->x_hotspot - param->viewport.y;
 		}
 	} else if (param->rotation == ROTATION_ANGLE_180) {
-		src_x_offset = pos->x - param->viewport.x;
+		if (!param->mirror)
+			src_x_offset = pos->x - param->viewport.x;
+
 		src_y_offset = pos->y - param->viewport.y;
 	}
-
 
 	if (src_x_offset >= (int)param->viewport.width)
 		cur_en = 0;  /* not visible beyond right edge*/
@@ -476,6 +469,7 @@ void dpp1_set_cursor_position(
 	REG_UPDATE(CURSOR0_CONTROL,
 			CUR0_ENABLE, cur_en);
 
+	dpp_base->pos.cur0_ctl.bits.cur0_enable = cur_en;
 }
 
 void dpp1_cnv_set_optional_cursor_attributes(

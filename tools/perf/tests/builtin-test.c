@@ -28,6 +28,8 @@
 #include <subcmd/exec-cmd.h>
 #include <linux/zalloc.h>
 
+#include "builtin-test-list.h"
+
 static bool dont_fork;
 
 struct test_suite *__weak arch_tests[] = {
@@ -107,6 +109,7 @@ static struct test_suite *generic_tests[] = {
 	&suite__expand_cgroup_events,
 	&suite__perf_time_to_tsc,
 	&suite__dlfilter,
+	&suite__sigtrap,
 	NULL,
 };
 
@@ -136,10 +139,10 @@ static bool has_subtests(const struct test_suite *t)
 
 static const char *skip_reason(const struct test_suite *t, int subtest)
 {
-	if (t->test_cases && subtest >= 0)
-		return t->test_cases[subtest].skip_reason;
+	if (!t->test_cases)
+		return NULL;
 
-	return NULL;
+	return t->test_cases[subtest >= 0 ? subtest : 0].skip_reason;
 }
 
 static const char *test_description(const struct test_suite *t, int subtest)
@@ -273,86 +276,6 @@ static int test_and_print(struct test_suite *t, int subtest)
 	return err;
 }
 
-static const char *shell_test__description(char *description, size_t size,
-					   const char *path, const char *name)
-{
-	FILE *fp;
-	char filename[PATH_MAX];
-
-	path__join(filename, sizeof(filename), path, name);
-	fp = fopen(filename, "r");
-	if (!fp)
-		return NULL;
-
-	/* Skip shebang */
-	while (fgetc(fp) != '\n');
-
-	description = fgets(description, size, fp);
-	fclose(fp);
-
-	return description ? strim(description + 1) : NULL;
-}
-
-#define for_each_shell_test(entlist, nr, base, ent)	                \
-	for (int __i = 0; __i < nr && (ent = entlist[__i]); __i++)	\
-		if (!is_directory(base, ent) && ent->d_name[0] != '.')
-
-static const char *shell_tests__dir(char *path, size_t size)
-{
-	const char *devel_dirs[] = { "./tools/perf/tests", "./tests", };
-        char *exec_path;
-	unsigned int i;
-
-	for (i = 0; i < ARRAY_SIZE(devel_dirs); ++i) {
-		struct stat st;
-		if (!lstat(devel_dirs[i], &st)) {
-			scnprintf(path, size, "%s/shell", devel_dirs[i]);
-			if (!lstat(devel_dirs[i], &st))
-				return path;
-		}
-	}
-
-        /* Then installed path. */
-        exec_path = get_argv_exec_path();
-        scnprintf(path, size, "%s/tests/shell", exec_path);
-	free(exec_path);
-	return path;
-}
-
-static int shell_tests__max_desc_width(void)
-{
-	struct dirent **entlist;
-	struct dirent *ent;
-	int n_dirs, e;
-	char path_dir[PATH_MAX];
-	const char *path = shell_tests__dir(path_dir, sizeof(path_dir));
-	int width = 0;
-
-	if (path == NULL)
-		return -1;
-
-	n_dirs = scandir(path, &entlist, NULL, alphasort);
-	if (n_dirs == -1)
-		return -1;
-
-	for_each_shell_test(entlist, n_dirs, path, ent) {
-		char bf[256];
-		const char *desc = shell_test__description(bf, sizeof(bf), path, ent->d_name);
-
-		if (desc) {
-			int len = strlen(desc);
-
-			if (width < len)
-				width = len;
-		}
-	}
-
-	for (e = 0; e < n_dirs; e++)
-		zfree(&entlist[e]);
-	free(entlist);
-	return width;
-}
-
 struct shell_test {
 	const char *dir;
 	const char *file;
@@ -379,33 +302,17 @@ static int shell_test__run(struct test_suite *test, int subdir __maybe_unused)
 static int run_shell_tests(int argc, const char *argv[], int i, int width,
 				struct intlist *skiplist)
 {
-	struct dirent **entlist;
-	struct dirent *ent;
-	int n_dirs, e;
-	char path_dir[PATH_MAX];
-	struct shell_test st = {
-		.dir = shell_tests__dir(path_dir, sizeof(path_dir)),
-	};
+	struct shell_test st;
+	const struct script_file *files, *file;
 
-	if (st.dir == NULL)
-		return -1;
-
-	n_dirs = scandir(st.dir, &entlist, NULL, alphasort);
-	if (n_dirs == -1) {
-		pr_err("failed to open shell test directory: %s\n",
-			st.dir);
-		return -1;
-	}
-
-	for_each_shell_test(entlist, n_dirs, st.dir, ent) {
+	files = list_script_files();
+	if (!files)
+		return 0;
+	for (file = files; file->dir; file++) {
 		int curr = i++;
-		char desc[256];
 		struct test_case test_cases[] = {
 			{
-				.desc = shell_test__description(desc,
-								sizeof(desc),
-								st.dir,
-								ent->d_name),
+				.desc = file->desc,
 				.run_case = shell_test__run,
 			},
 			{ .name = NULL, }
@@ -415,12 +322,14 @@ static int run_shell_tests(int argc, const char *argv[], int i, int width,
 			.test_cases = test_cases,
 			.priv = &st,
 		};
+		st.dir = file->dir;
 
-		if (!perf_test__matches(test_suite.desc, curr, argc, argv))
+		if (test_suite.desc == NULL ||
+		    !perf_test__matches(test_suite.desc, curr, argc, argv))
 			continue;
 
-		st.file = ent->d_name;
-		pr_info("%2d: %-*s:", i, width, test_suite.desc);
+		st.file = file->file;
+		pr_info("%3d: %-*s:", i, width, test_suite.desc);
 
 		if (intlist__find(skiplist, i)) {
 			color_fprintf(stderr, PERF_COLOR_YELLOW, " Skip (user override)\n");
@@ -429,10 +338,6 @@ static int run_shell_tests(int argc, const char *argv[], int i, int width,
 
 		test_and_print(&test_suite, 0);
 	}
-
-	for (e = 0; e < n_dirs; e++)
-		zfree(&entlist[e]);
-	free(entlist);
 	return 0;
 }
 
@@ -441,7 +346,7 @@ static int __cmd_test(int argc, const char *argv[], struct intlist *skiplist)
 	struct test_suite *t;
 	unsigned int j, k;
 	int i = 0;
-	int width = shell_tests__max_desc_width();
+	int width = list_script_max_width();
 
 	for_each_test(j, k, t) {
 		int len = strlen(test_description(t, -1));
@@ -470,7 +375,7 @@ static int __cmd_test(int argc, const char *argv[], struct intlist *skiplist)
 				continue;
 		}
 
-		pr_info("%2d: %-*s:", i, width, test_description(t, -1));
+		pr_info("%3d: %-*s:", i, width, test_description(t, -1));
 
 		if (intlist__find(skiplist, i)) {
 			color_fprintf(stderr, PERF_COLOR_YELLOW, " Skip (user override)\n");
@@ -510,7 +415,7 @@ static int __cmd_test(int argc, const char *argv[], struct intlist *skiplist)
 							curr, argc, argv))
 					continue;
 
-				pr_info("%2d.%1d: %-*s:", i, subi + 1, subw,
+				pr_info("%3d.%1d: %-*s:", i, subi + 1, subw,
 					test_description(t, subi));
 				test_and_print(t, subi);
 			}
@@ -522,36 +427,22 @@ static int __cmd_test(int argc, const char *argv[], struct intlist *skiplist)
 
 static int perf_test__list_shell(int argc, const char **argv, int i)
 {
-	struct dirent **entlist;
-	struct dirent *ent;
-	int n_dirs, e;
-	char path_dir[PATH_MAX];
-	const char *path = shell_tests__dir(path_dir, sizeof(path_dir));
+	const struct script_file *files, *file;
 
-	if (path == NULL)
-		return -1;
-
-	n_dirs = scandir(path, &entlist, NULL, alphasort);
-	if (n_dirs == -1)
-		return -1;
-
-	for_each_shell_test(entlist, n_dirs, path, ent) {
+	files = list_script_files();
+	if (!files)
+		return 0;
+	for (file = files; file->dir; file++) {
 		int curr = i++;
-		char bf[256];
 		struct test_suite t = {
-			.desc = shell_test__description(bf, sizeof(bf), path, ent->d_name),
+			.desc = file->desc
 		};
 
 		if (!perf_test__matches(t.desc, curr, argc, argv))
 			continue;
 
-		pr_info("%2d: %s\n", i, t.desc);
-
+		pr_info("%3d: %s\n", i, t.desc);
 	}
-
-	for (e = 0; e < n_dirs; e++)
-		zfree(&entlist[e]);
-	free(entlist);
 	return 0;
 }
 
@@ -567,14 +458,14 @@ static int perf_test__list(int argc, const char **argv)
 		if (!perf_test__matches(test_description(t, -1), curr, argc, argv))
 			continue;
 
-		pr_info("%2d: %s\n", i, test_description(t, -1));
+		pr_info("%3d: %s\n", i, test_description(t, -1));
 
 		if (has_subtests(t)) {
 			int subn = num_subtests(t);
 			int subi;
 
 			for (subi = 0; subi < subn; subi++)
-				pr_info("%2d:%1d: %s\n", i, subi + 1,
+				pr_info("%3d:%1d: %s\n", i, subi + 1,
 					test_description(t, subi));
 		}
 	}
@@ -605,6 +496,9 @@ int cmd_test(int argc, const char **argv)
 
         if (ret < 0)
                 return ret;
+
+	/* Unbuffered output */
+	setvbuf(stdout, NULL, _IONBF, 0);
 
 	argc = parse_options_subcommand(argc, argv, test_options, test_subcommands, test_usage, 0);
 	if (argc >= 1 && !strcmp(argv[0], "list"))

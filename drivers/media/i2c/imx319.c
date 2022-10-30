@@ -2523,7 +2523,7 @@ error_probe:
 	return ret;
 }
 
-static int imx319_remove(struct i2c_client *client)
+static void imx319_remove(struct i2c_client *client)
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct imx319 *imx319 = to_imx319(sd);
@@ -2536,8 +2536,6 @@ static int imx319_remove(struct i2c_client *client)
 	pm_runtime_set_suspended(&client->dev);
 
 	mutex_destroy(&imx319->mutex);
-
-	return 0;
 }
 
 static const struct dev_pm_ops imx319_pm_ops = {
@@ -2565,6 +2563,6 @@ module_i2c_driver(imx319_i2c_driver);
 MODULE_AUTHOR("Qiu, Tianshu <tian.shu.qiu@intel.com>");
 MODULE_AUTHOR("Rapolu, Chiranjeevi <chiranjeevi.rapolu@intel.com>");
 MODULE_AUTHOR("Bingbu Cao <bingbu.cao@intel.com>");
-MODULE_AUTHOR("Yang, Hyungwoo <hyungwoo.yang@intel.com>");
+MODULE_AUTHOR("Yang, Hyungwoo");
 MODULE_DESCRIPTION("Sony imx319 sensor driver");
 MODULE_LICENSE("GPL v2");

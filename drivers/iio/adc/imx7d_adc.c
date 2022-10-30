@@ -11,6 +11,7 @@
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/kernel.h>
+#include <linux/mod_devicetable.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
@@ -522,12 +523,11 @@ static int imx7d_adc_probe(struct platform_device *pdev)
 
 	imx7d_adc_feature_config(info);
 
-	ret = imx7d_adc_enable(&indio_dev->dev);
+	ret = imx7d_adc_enable(dev);
 	if (ret)
 		return ret;
 
-	ret = devm_add_action_or_reset(dev, __imx7d_adc_disable,
-				       &indio_dev->dev);
+	ret = devm_add_action_or_reset(dev, __imx7d_adc_disable, dev);
 	if (ret)
 		return ret;
 
@@ -540,14 +540,15 @@ static int imx7d_adc_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static SIMPLE_DEV_PM_OPS(imx7d_adc_pm_ops, imx7d_adc_disable, imx7d_adc_enable);
+static DEFINE_SIMPLE_DEV_PM_OPS(imx7d_adc_pm_ops, imx7d_adc_disable,
+				imx7d_adc_enable);
 
 static struct platform_driver imx7d_adc_driver = {
 	.probe		= imx7d_adc_probe,
 	.driver		= {
 		.name	= "imx7d_adc",
 		.of_match_table = imx7d_adc_match,
-		.pm	= &imx7d_adc_pm_ops,
+		.pm	= pm_sleep_ptr(&imx7d_adc_pm_ops),
 	},
 };
 

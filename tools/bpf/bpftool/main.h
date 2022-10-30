@@ -8,10 +8,10 @@
 #undef GCC_VERSION
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <linux/bpf.h>
 #include <linux/compiler.h>
 #include <linux/kernel.h>
-#include <tools/libc_compat.h>
 
 #include <bpf/hashmap.h>
 #include <bpf/libbpf.h>
@@ -57,19 +57,11 @@ static inline void *u64_to_ptr(__u64 ptr)
 #define HELP_SPEC_PROGRAM						\
 	"PROG := { id PROG_ID | pinned FILE | tag PROG_TAG | name PROG_NAME }"
 #define HELP_SPEC_OPTIONS						\
-	"OPTIONS := { {-j|--json} [{-p|--pretty}] | {-d|--debug}"
+	"OPTIONS := { {-j|--json} [{-p|--pretty}] | {-d|--debug} | {-l|--legacy}"
 #define HELP_SPEC_MAP							\
 	"MAP := { id MAP_ID | pinned FILE | name MAP_NAME }"
 #define HELP_SPEC_LINK							\
 	"LINK := { id LINK_ID | pinned FILE }"
-
-extern const char * const prog_type_name[];
-extern const size_t prog_type_name_size;
-
-extern const char * const attach_type_name[__MAX_BPF_ATTACH_TYPE];
-
-extern const char * const map_type_name[];
-extern const size_t map_type_name_size;
 
 /* keep in sync with the definition in skeleton/pid_iter.bpf.c */
 enum bpf_obj_type {
@@ -90,6 +82,7 @@ extern bool block_mount;
 extern bool verifier_logs;
 extern bool relaxed_maps;
 extern bool use_loader;
+extern bool legacy_libbpf;
 extern struct btf *base_btf;
 extern struct hashmap *refs_table;
 
@@ -112,7 +105,9 @@ struct obj_ref {
 
 struct obj_refs {
 	int ref_cnt;
+	bool has_bpf_cookie;
 	struct obj_ref *refs;
+	__u64 bpf_cookie;
 };
 
 struct btf;
@@ -138,6 +133,10 @@ struct cmd {
 
 int cmd_select(const struct cmd *cmds, int argc, char **argv,
 	       int (*help)(int argc, char **argv));
+
+#define MAX_PROG_FULL_NAME 128
+void get_prog_full_name(const struct bpf_prog_info *prog_info, int prog_fd,
+			char *name_buff, size_t buff_len);
 
 int get_fd_type(int fd);
 const char *get_fd_type_name(enum bpf_obj_type type);
@@ -243,6 +242,20 @@ int print_all_levels(__maybe_unused enum libbpf_print_level level,
 
 size_t hash_fn_for_key_as_id(const void *key, void *ctx);
 bool equal_fn_for_key_as_id(const void *k1, const void *k2, void *ctx);
+
+/* bpf_attach_type_input_str - convert the provided attach type value into a
+ * textual representation that we accept for input purposes.
+ *
+ * This function is similar in nature to libbpf_bpf_attach_type_str, but
+ * recognizes some attach type names that have been used by the program in the
+ * past and which do not follow the string inference scheme that libbpf uses.
+ * These textual representations should only be used for user input.
+ *
+ * @t: The attach type
+ * Returns a pointer to a static string identifying the attach type. NULL is
+ * returned for unknown bpf_attach_type values.
+ */
+const char *bpf_attach_type_input_str(enum bpf_attach_type t);
 
 static inline void *u32_as_hash_field(__u32 x)
 {
