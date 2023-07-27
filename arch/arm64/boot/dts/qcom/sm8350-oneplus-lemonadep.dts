@@ -4,5 +4,5 @@
 
 / {
     model = "OnePlus 9"
-    compatible = "qcom,sm8350", "qcom,lahaina", "qcom,lemonade";
+    compatible = "qcom,sm8350", "qcom,lahaina", "qcom,lemonadep";
 }
