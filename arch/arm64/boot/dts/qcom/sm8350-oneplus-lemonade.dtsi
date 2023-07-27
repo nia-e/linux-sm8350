@@ -1,5 +1,3 @@
-/dts-v1/;
-
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/regulator/qcom,rpmh-regulator.h>
 #include <dt-bindings/dma/qcom-gpi.h>
@@ -19,6 +17,7 @@
 / {
 	//model = "Qualcomm Technologies, Inc. lahaina v1 SoC";
 	//compatible = "qcom,sm8350", "qcom,lahaina";
+	chassis-type = "handset";
 	qcom,msm-id = <415 0x10000>, <456 0x10000>;
 	qcom,board-id = <0 0>;
 	interrupt-parent = <&intc>;
@@ -27,7 +26,7 @@
 	#size-cells = <2>;
 
 	aliases {
-		display0 = &framebuffer0;
+		display0 = &framebuffer;
 	};
 
 	chosen {
@@ -37,14 +36,14 @@
 
 		stdout-path = "display0";
 
-		framebuffer0: framebuffer@e1000000 {
-			compatible = "simple-framebuffer";
-			reg = <0x0 0xe1000000 0x0 0x02300000>;
-			width = <1080>;
-			height = <2400>;
-			stride = <(1080 * 4)>;
-			format = "a8r8g8b8";
-		};
+		//framebuffer0: framebuffer@e1000000 {
+		//	compatible = "simple-framebuffer";
+		//	reg = <0x0 0xe1000000 0x0 0x02300000>;
+		//	width = <1080>;
+		//	height = <2400>;
+		//	stride = <(1080 * 4)>;
+		//	format = "a8r8g8b8";
+		//};
 	};
 
 	vph_pwr: vph-pwr-regulator {
@@ -83,10 +82,10 @@
 	};
 };
 
-&adsp {
-	status = "okay";
-	firmware-name = "postmarketos/adsp.mbn";
-};
+//&adsp {
+//	status = "okay";
+//	firmware-name = "postmarketos/adsp.mbn";
+//};
 
 &reserved_memory {
 	#address-cells = <0x02>;
@@ -97,11 +96,6 @@
 		reg = <0x0 0xe1000000 0x0 0x02300000>;
 		no-map;
 		label = "cont_splash_region";
-	};
-
-	framebuffer_region@e1000000 {
-		reg = <0x0 0xe1000000 0x0 0x02300000>;
-		no-map;
 	};
 
 	bootloader_log_mem@9fff7000 {
@@ -351,18 +345,18 @@
 	};
 };
 
-&cdsp {
-	status = "okay";
-	firmware-name = "postmarketos/cdsp.mbn";
-};
+//&cdsp {
+//	status = "okay";
+//	firmware-name = "postmarketos/cdsp.mbn";
+//};
 
-&mpss {
-	status = "okay";
-	firmware-name = "postmarketos/modem.mbn";
-
-	pinctrl-names = "default";
-	pinctrl-1 = <&rf_cable_ant0_active &rf_cable_ant1_active &rf_cable_ant2_active &rf_cable_ant3_active &rf_cable_ant7_active>;
-};
+//&mpss {
+//	status = "okay";
+//	firmware-name = "postmarketos/modem.mbn";
+//
+//	pinctrl-names = "default";
+//	pinctrl-1 = <&rf_cable_ant0_active &rf_cable_ant1_active &rf_cable_ant2_active &rf_cable_ant3_active &rf_cable_ant7_active>;
+//};
 
 &qupv3_id_0 {
 	status = "okay";
@@ -376,10 +370,10 @@
 	status = "okay";
 };
 
-&slpi {
-	status = "okay";
-	firmware-name = "postmarketos/slpi.mbn";
-};
+//&slpi {
+//	status = "okay";
+//	firmware-name = "postmarketos/slpi.mbn";
+//};
 
 &tlmm {
 	gpio-reserved-ranges = <52 8>;
@@ -497,12 +491,12 @@
 	vdda-pll-supply = <&vreg_l5b_0p88>;
 };
 
-&ipa {
-	status = "okay";
-
-	memory-region = <&pil_ipa_fw_mem>;
-	firmware-name = "postmarketos/ipa_fws.mbn";
-};
+//&ipa {
+//	status = "okay";
+//
+//	memory-region = <&pil_ipa_fw_mem>;
+//	firmware-name = "postmarketos/ipa_fws.mbn";
+//};
 
 &pon_pwrkey {
 	status = "okay";

@@ -3,6 +3,30 @@
 #include "sm8350-oneplus-lemonade.dtsi"
 
 / {
-    model = "OnePlus 9"
-    compatible = "qcom,sm8350", "qcom,lahaina", "qcom,lemonadep";
+	model = "OnePlus 9";
+	compatible = "qcom,sm8350", "qcom,lahaina", "qcom,lemonadep";
+}
+
+@chosen {
+	framebuffer: framebuffer@e4d00000 {
+			compatible = "simple-framebuffer";
+			reg = <0 0xE4D00000 0 0x2400000>;
+			width = <1080>;
+			height = <2412>;
+			stride = <(1080 * 4)>;
+			format = "a8r8g8b8";
+			/*
+			 * That's (going to be) a lot of clocks, but it's necessary due
+			 * to unused clk cleanup & no panel driver yet
+			 */
+			clocks = <&gcc GCC_DISP_HF_AXI_CLK>,
+					 <&gcc GCC_DISP_SF_AXI_CLK>;
+		};
+}
+
+@reserved_memory {
+	framebuffer_region@e4d00000 {
+		reg = <0x0 0xe1000000 0x0 0x02300000>;
+		no-map;
+	};
 }
