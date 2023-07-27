@@ -22,11 +22,8 @@
 	qcom,board-id = <0 0>;
 	interrupt-parent = <&intc>;
 
-	#address-cells = <2>;
-	#size-cells = <2>;
-
 	aliases {
-		display0 = &framebuffer;
+		display0 = &framebuffer0;
 	};
 
 	chosen {

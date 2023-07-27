@@ -1,29 +1,29 @@
-/dts-v1/
+/dts-v1/;
 
-#include "sm8350-oneplus-lemonade.dtsi"
+#include "sm8350-oneplus-common.dtsi"
 
 / {
 	model = "OnePlus 9";
 	compatible = "qcom,sm8350", "qcom,lahaina", "qcom,lemonade";
-}
 
-@chosen {
-	framebuffer: framebuffer@e1000000 {
-			compatible = "simple-framebuffer";
-			reg = <0x0 0xe1000000 0x0 0x02300000>;
-			width = <1080>;
-			height = <2400>;
-			stride = <(1080 * 4)>;
-			format = "a8r8g8b8";
+	chosen {
+		framebuffer0: framebuffer@e1000000 {
+				compatible = "simple-framebuffer";
+				reg = <0x0 0xe1000000 0x0 0x02300000>;
+				width = <1080>;
+				height = <2400>;
+				stride = <(1080 * 4)>;
+				format = "a8r8g8b8";
 
-			clocks = <&gcc GCC_DISP_HF_AXI_CLK>,
-					 <&gcc GCC_DISP_SF_AXI_CLK>;
-		};
-}
+				//clocks = <&gcc GCC_DISP_HF_AXI_CLK>,
+				//		 <&gcc GCC_DISP_SF_AXI_CLK>;
+			};
+	};
+};
 
-@reserved_memory {
+&reserved_memory {
 	framebuffer_region@e1000000 {
 		reg = <0x0 0xe1000000 0x0 0x02300000>;
 		no-map;
 	};
-}
+};
