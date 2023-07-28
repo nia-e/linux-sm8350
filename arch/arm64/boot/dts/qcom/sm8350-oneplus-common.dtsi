@@ -15,8 +15,6 @@
 #include "pmr735b.dtsi"
 
 / {
-	//model = "Qualcomm Technologies, Inc. lahaina v1 SoC";
-	//compatible = "qcom,sm8350", "qcom,lahaina";
 	chassis-type = "handset";
 	qcom,msm-id = <415 0x10000>, <456 0x10000>;
 	qcom,board-id = <0 0>;
@@ -51,31 +49,6 @@
 
 		regulator-always-on;
 		regulator-boot-on;
-	};
-
-	touchscreen_gpio_i2c {
-		compatible = "i2c-gpio";
-		sda-gpios = <&tlmm 20 (GPIO_ACTIVE_HIGH|GPIO_OPEN_DRAIN)>;
-		scl-gpios = <&tlmm 21 (GPIO_ACTIVE_HIGH|GPIO_OPEN_DRAIN)>;
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		pinctrl-names = "default";
-		pinctrl-0 = <&i2c4_default &tp_enable_2v8>;
-
-		touchscreen@48 {
-			compatible = "samsung,s6sy761";
-			reg = <0x48>;
-			interrupt-parent = <&tlmm>;
-			interrupts = <23 0x2008>;
-
-			vdd-supply = <&vreg_l8c_1p8>;
-			avdd-supply = <&vreg_l3c_3p0>;
-			
-			pinctrl-names = "default", "sleep";
-			pinctrl-0 = <&tp_rst_active &tp_irq_active>;
-			pinctrl-1 = <&tp_rst_suspend>;
-		};
 	};
 };
 
@@ -372,47 +345,6 @@
 //	firmware-name = "postmarketos/slpi.mbn";
 //};
 
-&tlmm {
-	gpio-reserved-ranges = <52 8>;
-
-	tp_irq_active: tp_irq_active {
-		pins = "gpio23";
-		function = "gpio";
-		drive-strength = <8>;
-		bias-disable;
-		input-enable;
-	};
-
-	tp_rst_active: tp_rst_active {
-		pins = "gpio22";
-		function = "gpio";
-		drive-strength = <8>;
-		bias-pull-up;
-	};
-
-	tp_enable_2v8: tp_enable_2v8 {
-		pins = "gpio74";
-		function = "gpio";
-		drive-strength = <8>;
-		bias-pull-up;
-		output-high;
-	};
-
-	i2c4_default: qup-i2c4-default {
-		pins = "gpio20", "gpio21";
-		function = "gpio";
-		drive-strength = <2>;
-		bias-disable;
-	};
-
-	tp_rst_suspend: tp_rst_suspend {
-		pins = "gpio22";
-		function = "gpio";
-		drive-strength = <8>;
-		bias-pull-down;
-	};
-};
-
 &ufs_mem_hc {
 	status = "okay";
 
@@ -507,53 +439,21 @@
 	status = "okay";
 };
 
-&i2c2 {
-	status = "okay";
-	clock-frequency = <100000>;
-
-	bat: battery {
-		compatible = "simple-battery";
-		voltage-min-design-microvolt = <3200000>;
-		energy-full-design-microwatt-hours = <15840000>;
-		charge-full-design-microamp-hours = <2225000>;
-	};
-
-	bq27541: fuel-gauge@55 {
-		compatible = "ti,bq27541";
-		reg = <0x55>;
-		monitored-battery = <&bat>;
+&pm8350b_gpios {
+	batt_btb_adc_n: batt-btb-adc-n-state {
+		pins = "gpio2";
+		function = "normal";
+		bias-pull-up;
+		bias-high-impedance;
 	};
 };
 
-&tlmm {
-	rf_cable_ant0_active: rf_cable_ant0_active {
-		pins = "gpio165";
-		function = "gpio";
-		drive-strength = <2>;
+&pmk8350_gpios {
+	vol_down_n: vol-down-n-state {
+		pins = "gpio6";
+		function = "normal";
+		power-source = <0>;
 		bias-pull-up;
-	};
-	rf_cable_ant1_active: rf_cable_ant1_active {
-		pins = "gpio27";
-		function = "gpio";
-		drive-strength = <2>;
-		bias-pull-up;
-	};
-	rf_cable_ant2_active: rf_cable_ant2_active {
-		pins = "gpio92";
-		function = "gpio";
-		drive-strength = <2>;
-		bias-pull-up;
-	};
-	rf_cable_ant3_active: rf_cable_ant3_active {
-		pins = "gpio44";
-		function = "gpio";
-		drive-strength = <2>;
-		bias-pull-up;
-	};
-	rf_cable_ant7_active: rf_cable_ant7_active {
-		pins = "gpio155";
-		function = "gpio";
-		drive-strength = <2>;
-		bias-pull-up;
+		input-enable;
 	};
 };

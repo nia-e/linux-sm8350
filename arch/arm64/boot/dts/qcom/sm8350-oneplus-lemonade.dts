@@ -8,16 +8,41 @@
 
 	chosen {
 		framebuffer0: framebuffer@e1000000 {
-				compatible = "simple-framebuffer";
-				reg = <0x0 0xe1000000 0x0 0x02300000>;
-				width = <1080>;
-				height = <2400>;
-				stride = <(1080 * 4)>;
-				format = "a8r8g8b8";
+			compatible = "simple-framebuffer";
+			reg = <0x0 0xe1000000 0x0 0x02300000>;
+			width = <1080>;
+			height = <2400>;
+			stride = <(1080 * 4)>;
+			format = "a8r8g8b8";
 
-				//clocks = <&gcc GCC_DISP_HF_AXI_CLK>,
-				//		 <&gcc GCC_DISP_SF_AXI_CLK>;
-			};
+			//clocks = <&gcc GCC_DISP_HF_AXI_CLK>,
+			//	 <&gcc GCC_DISP_SF_AXI_CLK>;
+		};
+	};
+
+	touchscreen_gpio_i2c {
+		compatible = "i2c-gpio";
+		sda-gpios = <&tlmm 20 (GPIO_ACTIVE_HIGH|GPIO_OPEN_DRAIN)>;
+		scl-gpios = <&tlmm 21 (GPIO_ACTIVE_HIGH|GPIO_OPEN_DRAIN)>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c4_default &tp_enable_2v8>;
+
+		touchscreen@48 {
+			compatible = "samsung,s6sy761";
+			reg = <0x48>;
+			interrupt-parent = <&tlmm>;
+			interrupts = <23 0x2008>;
+
+			vdd-supply = <&vreg_l8c_1p8>;
+			avdd-supply = <&vreg_l3c_3p0>;
+			
+			pinctrl-names = "default", "sleep";
+			pinctrl-0 = <&tp_rst_active &tp_irq_active>;
+			pinctrl-1 = <&tp_rst_suspend>;
+		};
 	};
 };
 
@@ -25,5 +50,68 @@
 	framebuffer_region@e1000000 {
 		reg = <0x0 0xe1000000 0x0 0x02300000>;
 		no-map;
+	};
+};
+
+// TODO: Does this need to be here?
+
+&i2c2 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	bat: battery {
+		compatible = "simple-battery";
+		voltage-min-design-microvolt = <3200000>;
+		energy-full-design-microwatt-hours = <15840000>;
+		charge-full-design-microamp-hours = <2225000>;
+	};
+
+	bq27541: fuel-gauge@55 {
+		compatible = "ti,bq27541";
+		reg = <0x55>;
+		monitored-battery = <&bat>;
+	};
+};
+
+&tlmm {
+	gpio-reserved-ranges = <52 8>;
+
+	// The tp_* ones seem lemonade-specific, at least
+
+	tp_irq_active: tp_irq_active {
+		pins = "gpio23";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-disable;
+		input-enable;
+	};
+
+	tp_rst_active: tp_rst_active {
+		pins = "gpio22";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-pull-up;
+	};
+
+	tp_enable_2v8: tp_enable_2v8 {
+		pins = "gpio74";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-pull-up;
+		output-high;
+	};
+
+	i2c4_default: qup-i2c4-default {
+		pins = "gpio20", "gpio21";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	tp_rst_suspend: tp_rst_suspend {
+		pins = "gpio22";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-pull-down;
 	};
 };

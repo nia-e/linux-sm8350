@@ -8,16 +8,16 @@
 
 	chosen {
 		framebuffer0: framebuffer@e4d00000 {
-				compatible = "simple-framebuffer";
-				reg = <0x0 0xe4d00000 0x0 0x2400000>;
-				width = <1080>;
-				height = <2412>;
-				stride = <(1080 * 4)>;
-				format = "a8r8g8b8";
+			compatible = "simple-framebuffer";
+			reg = <0x0 0xe4d00000 0x0 0x2400000>;
+			width = <1080>;
+			height = <2412>;
+			stride = <(1080 * 4)>;
+			format = "a8r8g8b8";
 
-				clocks = <&gcc GCC_DISP_HF_AXI_CLK>,
-						 <&gcc GCC_DISP_SF_AXI_CLK>;
-			};
+			clocks = <&gcc GCC_DISP_HF_AXI_CLK>,
+				 <&gcc GCC_DISP_SF_AXI_CLK>;
+		};
 	};
 };
 
@@ -25,5 +25,100 @@
 	framebuffer_region@e4d00000 {
 		reg = <0x0 0xe1000000 0x0 0x02300000>;
 		no-map;
+	};
+};
+
+// Almost definitely belongs to the dtsi but idk
+
+&pm8350_gpios {
+	usb2_vbus_boost_default {
+		pins = "gpio8";
+		function = "normal";
+		output-low;
+		power-source = <0x00>;
+		phandle = <0x5e1>;
+	};
+
+	usb2_vbus_det_default {
+		pins = "gpio9";
+		function = "normal";
+		input-enable;
+		bias-disable;
+		power-source = <0x00>;
+		phandle = <0x5e0>;
+	};
+
+	gpio1_adc_default: gpio1-adc-default {
+		pins = "gpio1";
+		function = "normal";
+		bias-high-impedance;
+		bias-disable;
+		phandle = <0x566>;
+	};
+
+	gpio3_adc_default: gpio3-adc-default {
+		pins = "gpio3";
+		function = "normal";
+		bias-high-impedance;
+		bias-disable;
+		phandle = <0x567>;
+	};
+};
+
+// TODO: do these need to be here or in dtsi?
+
+&i2c4 {
+	status = "okay";
+	/* XXX: Don't forget to increase this.. */
+	clock-frequency = <10000>;
+
+	/* Synaptics on-cell S3908 touch controller @ 4B */
+};
+
+&i2c13 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	fsa4480@42 {
+		compatible = "fcs,fsa4480";
+		reg = <0x42>;
+		mode-switch;
+		orientation-switch;
+	};
+
+	/* Qualcomm PM8008i/PM8008j (?) @ 8, 9, c, d */
+};
+
+&i2c15 {
+	status = "okay";
+	clock-frequency = <10000>;
+
+	/*
+	 * The OnePlus 9 uses a pair of hall sensors for the
+	 * tri-state key UP and DOWN detection, one of the
+	 * following variants:
+	 *
+	 * ist8801 hall sensor @ 18, 19
+	 * MagnaChip MXM1120 hall sensor @ 0C, 0D
+	 */
+	
+	/* sn-nci NFC controller @ 28 */
+};
+
+&i2c17 {
+	status = "okay";
+	clock-frequency = <10000>;
+
+	/* Awinic aw8697 haptics driver @ 5A */
+};
+
+&tlmm {
+	gpio-reserved-ranges = <44 4>;
+
+	ts_int_default: ts-int-default-state {
+		pins = "gpio23";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
 	};
 };
