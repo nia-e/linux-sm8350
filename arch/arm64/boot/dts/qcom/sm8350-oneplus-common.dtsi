@@ -16,9 +16,9 @@
 
 / {
 	chassis-type = "handset";
-	qcom,msm-id = <415 0x10000>, <456 0x10000>;
-	qcom,board-id = <0 0>;
-	interrupt-parent = <&intc>;
+	//qcom,msm-id = <415 0x10000>, <456 0x10000>;
+	//qcom,board-id = <0 0>;
+	//interrupt-parent = <&intc>;
 
 	aliases {
 		display0 = &framebuffer0;
