@@ -23,8 +23,8 @@
 	model = "OnePlus 9 Pro";
 	compatible = "oneplus,lemonade", "qcom,sm8350";
 	chassis-type = "handset";
-	qcom,msm-id = <415 0x10000>, <456 0x10000>;
-	qcom,board-id = <0 0>;
+	//qcom,msm-id = <415 0x10000>, <456 0x10000>; // TODO: recompile kernel tomorrow!!!!
+	//qcom,board-id = <0 0>;
 	interrupt-parent = <&intc>;
 
 	chosen {
