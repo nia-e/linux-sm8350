@@ -8,6 +8,8 @@
  * Copyright (c) 2007 Novell Inc.
  */
 
+#define DEBUG 1
+
 #include <linux/device/driver.h>
 #include <linux/device.h>
 #include <linux/module.h>

@@ -8,6 +8,8 @@
  * Copyright (c) 2003-2004 IBM Corp.
  */
 
+#define DEBUG 1
+
 #include <linux/device/class.h>
 #include <linux/device.h>
 #include <linux/module.h>

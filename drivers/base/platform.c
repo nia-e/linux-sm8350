@@ -9,6 +9,8 @@
  * information.
  */
 
+#define DEBUG 1
+
 #include <linux/string.h>
 #include <linux/platform_device.h>
 #include <linux/of_device.h>

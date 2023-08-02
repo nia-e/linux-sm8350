@@ -18,9 +18,8 @@
 #include "pmr735b.dtsi"
 
 / {
+	/* As with the Sony devices, msm-id and board-id aren't needed here */
 	chassis-type = "handset";
-	qcom,msm-id = <415 0x10000>, <456 0x10000>;
-	qcom,board-id = <0 0>;
 	interrupt-parent = <&intc>;
 
 	chosen {
@@ -578,15 +577,6 @@
 	};
 };
 
-&pm8350b_gpios {
-	batt_btb_adc_n: batt-btb-adc-n-state {
-		pins = "gpio2";
-		function = "normal";
-		bias-pull-up;
-		bias-high-impedance;
-	};
-};
-
 &pmk8350_gpios {
 	vol_down_n: vol-down-n-state {
 		pins = "gpio6";
@@ -602,7 +592,7 @@
 };
 
 &pmk8350_vadc {
-	pinctrl-0 = <&batt_btb_adc_n &gpio1_adc_default &gpio1_adc_default>;
+	pinctrl-0 = <&gpio1_adc_default &gpio1_adc_default>;
 	pinctrl-names = "default";
 
 	pmk8350_ref_gnd {
@@ -747,17 +737,17 @@
 		qcom,pre-scaling = <1 1>;
 	};
 
-	pm8350b_iin_fb {
-		reg = <PM8350B_ADC7_IIN_FB>;
-		label = "pm8350b_iin_fb";
-		qcom,pre-scaling = <32 100>;
-	};
+	// pm8350b_iin_fb {
+	// 	reg = <PM8350B_ADC7_IIN_FB>;
+	// 	label = "pm8350b_iin_fb";
+	// 	qcom,pre-scaling = <32 100>;
+	// };
 
-	pm8350b_ichg_fb {
-		reg = <PM8350B_ADC7_ICHG_FB>;
-		label = "pm8350b_ichg_fb";
-		qcom,pre-scaling = <1000 305185>;
-	};
+	// pm8350b_ichg_fb {
+	// 	reg = <PM8350B_ADC7_ICHG_FB>;
+	// 	label = "pm8350b_ichg_fb";
+	// 	qcom,pre-scaling = <1000 305185>;
+	// };
 
 	pmr735a_ref_gnd {
 		reg = <0x400>;
@@ -801,17 +791,17 @@
 		qcom,pre-scaling = <1 1>;
 	};
 
-	smb139x_1_ichg_smb {
-		reg = <SMB139x_1_ADC7_ICHG_SMB>;
-		label = "smb139x_1_ichg_smb";
-		qcom,pre-scaling = <16 100>;
-	};
+	// smb139x_1_ichg_smb {
+	// 	reg = <SMB139x_1_ADC7_ICHG_SMB>;
+	// 	label = "smb139x_1_ichg_smb";
+	// 	qcom,pre-scaling = <16 100>;
+	// };
 
-	smb139x_1_iin_smb {
-		reg = <SMB139x_1_ADC7_IIN_SMB>;
-		label = "smb139x_1_iin_smb";
-		qcom,pre-scaling = <32 100>;
-	};
+	// smb139x_1_iin_smb {
+	// 	reg = <SMB139x_1_ADC7_IIN_SMB>;
+	// 	label = "smb139x_1_iin_smb";
+	// 	qcom,pre-scaling = <32 100>;
+	// };
 
 	smb139x_2_smb_temp {
 		reg = <SMB139x_2_ADC7_SMB_TEMP>;
@@ -819,17 +809,17 @@
 		qcom,pre-scaling = <1 1>;
 	};
 
-	smb139x_2_ichg_smb {
-		reg = <SMB139x_2_ADC7_ICHG_SMB>;
-		label = "smb139x_2_ichg_smb";
-		qcom,pre-scaling = <16 100>;
-	};
+	// smb139x_2_ichg_smb {
+	// 	reg = <SMB139x_2_ADC7_ICHG_SMB>;
+	// 	label = "smb139x_2_ichg_smb";
+	// 	qcom,pre-scaling = <16 100>;
+	// };
 
-	smb139x_2_iin_smb {
-		reg = <SMB139x_2_ADC7_IIN_SMB>;
-		label = "smb139x_2_iin_smb";
-		qcom,pre-scaling = <32 100>;
-	};
+	// smb139x_2_iin_smb {
+	// 	reg = <SMB139x_2_ADC7_IIN_SMB>;
+	// 	label = "smb139x_2_iin_smb";
+	// 	qcom,pre-scaling = <32 100>;
+	// };
 
 	gpio1_v {
 		reg = <0x128>;
