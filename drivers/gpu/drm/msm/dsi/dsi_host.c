@@ -166,6 +166,7 @@ struct msm_dsi_host {
 	unsigned int lanes;
 	enum mipi_dsi_pixel_format format;
 	unsigned long mode_flags;
+	unsigned int slice_per_pkt;
 
 	/* lane data parsed via DT */
 	int dlane_swap;
@@ -850,7 +851,7 @@ static void dsi_update_dsc_timing(struct msm_dsi_host *msm_host, bool is_cmd_mod
 	 * Since the current driver only supports slice_per_pkt = 1,
 	 * pkt_per_line will be equal to slice per intf for now.
 	 */
-	pkt_per_line = slice_per_intf;
+	pkt_per_line = slice_per_intf * msm_host->slice_per_pkt;
 
 	if (is_cmd_mode) /* packet data type */
 		reg = DSI_COMMAND_COMPRESSION_MODE_CTRL_STREAM0_DATATYPE(MIPI_DSI_DCS_LONG_WRITE);
@@ -981,7 +982,8 @@ static void dsi_timing_setup(struct msm_dsi_host *msm_host, bool is_bonded_dsi)
 			 * TODO: Expand mipi_dsi_device struct to hold slice_per_pkt info
 			 *       and adjust DSC math to account for slice_per_pkt.
 			 */
-			wc = msm_host->dsc->slice_chunk_size + 1;
+			wc = msm_host->dsc->slice_chunk_size *
+			     msm_host->slice_per_pkt + 1;
 
 		dsi_write(msm_host, REG_DSI_CMD_MDP_STREAM0_CTRL,
 			DSI_CMD_MDP_STREAM0_CTRL_WORD_COUNT(wc) |
@@ -1606,6 +1608,7 @@ static int dsi_host_attach(struct mipi_dsi_host *host,
 	msm_host->lanes = dsi->lanes;
 	msm_host->format = dsi->format;
 	msm_host->mode_flags = dsi->mode_flags;
+	msm_host->slice_per_pkt = dsi->slice_per_pkt;
 	if (dsi->dsc)
 		msm_host->dsc = dsi->dsc;
 
@@ -1739,6 +1742,18 @@ static int dsi_host_parse_lane_data(struct msm_dsi_host *msm_host,
 	return -EINVAL;
 }
 
+static void dsi_host_set_num_slices(struct msm_dsi_host *msm_host)
+{
+	struct mipi_dsi_device *dsi = to_mipi_dsi_device(&msm_host->pdev->dev);
+
+	if (dsi->slice_per_pkt)
+		msm_host->slice_per_pkt = dsi->slice_per_pkt;
+	else {
+		msm_host->slice_per_pkt = 1;
+		dsi->slice_per_pkt = 1;
+	}
+}
+
 static int dsi_populate_dsc_params(struct msm_dsi_host *msm_host, struct drm_dsc_config *dsc)
 {
 	int ret;
@@ -1809,6 +1824,8 @@ static int dsi_host_parse_dt(struct msm_dsi_host *msm_host)
 			ret = PTR_ERR(msm_host->sfpb);
 		}
 	}
+
+	dsi_host_set_num_slices(msm_host);
 
 err:
 	of_node_put(endpoint);
