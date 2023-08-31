@@ -64,6 +64,7 @@ enum dsi_vid_dst_format {
 	VID_DST_FORMAT_RGB666 = 1,
 	VID_DST_FORMAT_RGB666_LOOSE = 2,
 	VID_DST_FORMAT_RGB888 = 3,
+	VID_DST_FORMAT_RGB101010 = 4,
 };
 
 enum dsi_rgb_swap {
@@ -91,6 +92,7 @@ enum dsi_cmd_dst_format {
 	CMD_DST_FORMAT_RGB565 = 6,
 	CMD_DST_FORMAT_RGB666 = 7,
 	CMD_DST_FORMAT_RGB888 = 8,
+	CMD_DST_FORMAT_RGB101010 = 10,
 };
 
 enum dsi_lane_swap {

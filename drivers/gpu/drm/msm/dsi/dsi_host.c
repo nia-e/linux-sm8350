@@ -187,6 +187,7 @@ static u32 dsi_get_bpp(const enum mipi_dsi_pixel_format fmt)
 	switch (fmt) {
 	case MIPI_DSI_FMT_RGB565:		return 16;
 	case MIPI_DSI_FMT_RGB666_PACKED:	return 18;
+	case MIPI_DSI_FMT_RGB101010:		return 32;
 	case MIPI_DSI_FMT_RGB666:
 	case MIPI_DSI_FMT_RGB888:
 	default:				return 24;
@@ -685,6 +686,7 @@ static inline enum dsi_vid_dst_format dsi_get_vid_fmt(
 				const enum mipi_dsi_pixel_format mipi_fmt)
 {
 	switch (mipi_fmt) {
+	case MIPI_DSI_FMT_RGB101010:	return VID_DST_FORMAT_RGB101010;
 	case MIPI_DSI_FMT_RGB888:	return VID_DST_FORMAT_RGB888;
 	case MIPI_DSI_FMT_RGB666:	return VID_DST_FORMAT_RGB666_LOOSE;
 	case MIPI_DSI_FMT_RGB666_PACKED:	return VID_DST_FORMAT_RGB666;
@@ -697,6 +699,7 @@ static inline enum dsi_cmd_dst_format dsi_get_cmd_fmt(
 				const enum mipi_dsi_pixel_format mipi_fmt)
 {
 	switch (mipi_fmt) {
+	case MIPI_DSI_FMT_RGB101010:	return CMD_DST_FORMAT_RGB101010;
 	case MIPI_DSI_FMT_RGB888:	return CMD_DST_FORMAT_RGB888;
 	case MIPI_DSI_FMT_RGB666_PACKED:
 	case MIPI_DSI_FMT_RGB666:	return CMD_DST_FORMAT_RGB666;
