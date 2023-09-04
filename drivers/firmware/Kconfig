@@ -212,6 +212,15 @@ config MTK_ADSP_IPC
 	  ADSP exists on some mtk processors.
 	  Client might use shared memory to exchange information with ADSP.
 
+config CONFIG_SYNA_TCM_FW
+	tristate "Synaptics TCM Firmware Loader
+	depends on RMI4_I2C
+	help
+	  Say yes here to add support for loading firmware images on Synaptics
+	  TCM on-cell touch controllers.
+
+	  If unsure, say N.
+
 config QCOM_SCM
 	tristate
 
