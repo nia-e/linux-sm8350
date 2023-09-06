@@ -1,0 +1,92 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (c) 2023, Nia Espera <a5b6@riseup.net>
+ */
+
+/dts-v1/;
+
+#include "sm8350-oneplus-common.dtsi"
+
+/ {
+	model = "OnePlus 9 Pro";
+	compatible = "oneplus,lemonadep", "qcom,sm8350";
+};
+
+&gpio_i2c4 {
+	touchscreen_syn: synaptics@4b {
+		compatible = "syna,rmi4-i2c";
+		reg = <0x4b>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		interrupts-extended = <&tlmm 23 0x2008>;
+
+		pinctrl-names = "default", "sleep";
+		pinctrl-0 = <&tp_rst_active &tp_irq_active>;
+		pinctrl-1 = <&tp_rst_suspend &tp_irq_suspend>;
+
+		irq-gpios = <&tlmm 23 0x2008>;
+		reset-gpios = <&tlmm 22 GPIO_ACTIVE_LOW>;
+
+		vdd-supply = <&pm8350c_l3>;
+		vio-supply = <&pm8350c_l6>;
+
+		syna,startup-delay-ms = <30>;
+		syna,reset-delay-ms = <30>;
+		touchscreen-size-x = <1440>;
+		touchscreen-size-y = <3216>;
+
+		status = "fail";
+
+		rmi4-f01@1 {
+			reg = <0x01>;
+			syna,nosleep-mode = <1>;
+		};
+
+		rmi4-f12@12 {
+			reg = <0x12>;
+			syna,sensor-type = <1>;
+			touchscreen-x-mm = <73>;
+			touchscreen-y-mm = <160>;
+			syna,rezero-wait-ms = <30>;
+		};
+
+		fw-loader {
+			compatible = "syna,tcm-fw-loader";
+			firmware-name = "postmarketos/FW_S3908_SAMSUNG.img";
+		};
+	};
+};
+
+&tlmm {
+	tp_rst_suspend: tp_rst_suspend {
+		pins = "gpio22";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-pull-down;
+	};
+
+	tp_enable_2v8: tp_enable_2v8 {
+		pins = "gpio31", "gpio197";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-pull-up;
+		output-high;
+	};
+};
+
+&qca6490_pd {
+	rf-gpios = <&tlmm 165 GPIO_ACTIVE_HIGH>;
+
+	pinctrl-0 = <&cnss_wlan_en_sleep>;
+	pinctrl-1 = <&cnss_wlan_en_active &rf_cable_ant0_active>;
+	pinctrl-names = "default", "active";
+
+	status = "okay";
+};
+
+&display_panel {
+	compatible = "samsung,amb670yf01";
+	/* Pending https://gitlab.freedesktop.org/drm/msm/-/issues/32 */
+	status = "fail";
+};

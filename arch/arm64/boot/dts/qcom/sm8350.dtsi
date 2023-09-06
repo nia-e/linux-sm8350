@@ -879,7 +879,9 @@
 				clocks = <&gcc GCC_QUPV3_WRAP2_S4_CLK>;
 				pinctrl-names = "default";
 				pinctrl-0 = <&qup_uart18_default>;
-				interrupts = <GIC_SPI 586 IRQ_TYPE_LEVEL_HIGH>;
+				interrupts-extended =
+					<&intc GIC_SPI 586 IRQ_TYPE_LEVEL_HIGH>,
+					<&tlmm 71 IRQ_TYPE_LEVEL_HIGH>;
 				power-domains = <&rpmhpd RPMHPD_CX>;
 				operating-points-v2 = <&qup_opp_table_100mhz>;
 				status = "disabled";
@@ -2969,10 +2971,35 @@
 			};
 
 			qup_uart18_default: qup-uart18-default-state {
-				pins = "gpio58", "gpio59";
-				function = "qup18";
-				drive-strength = <2>;
-				bias-disable;
+				cts-pins {
+					pins = "gpio68";
+					function = "qup18";
+					drive-strength = <2>;
+					bias-bus-hold;
+				};
+
+				rts-pins {
+					pins = "gpio69";
+					function = "qup18";
+					drive-strength = <2>;
+					bias-disable;
+				};
+
+				tx-pins {
+					pins = "gpio70";
+					function = "qup18";
+					drive-strength = <2>;
+					bias-pull-down;
+					output-enable;
+				};
+
+				rx-pins {
+					pins = "gpio71";
+					function = "qup18";
+					drive-strength = <2>;
+					bias-disable;
+					output-disable;
+				};
 			};
 
 			qup_i2c0_default: qup-i2c0-default-state {
