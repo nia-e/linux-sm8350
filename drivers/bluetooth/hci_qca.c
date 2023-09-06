@@ -219,6 +219,7 @@ struct qca_power {
 struct qca_serdev {
 	struct hci_uart	 serdev_hu;
 	struct gpio_desc *bt_en;
+	struct gpio_desc *wl_en;
 	struct gpio_desc *sw_ctrl;
 	struct clk	 *susclk;
 	enum qca_btsoc_type btsoc_type;
@@ -1112,13 +1113,14 @@ static void qca_controller_memdump(struct work_struct *work)
 		 * the controller. In such cases let us store the dummy
 		 * packets in the buffer.
 		 */
-		/* For QCA6390, controller does not lost packets but
+		/* For QCA6(3,4)90, controller does not lost packets but
 		 * sequence number field of packet sometimes has error
 		 * bits, so skip this checking for missing packet.
 		 */
 		while ((seq_no > qca_memdump->current_seq_no + 1) &&
-			(soc_type != QCA_QCA6390) &&
-			seq_no != QCA_LAST_SEQUENCE_NUM) {
+		       (soc_type != QCA_QCA6390) &&
+		       (soc_type != QCA_QCA6490) &&
+		       seq_no != QCA_LAST_SEQUENCE_NUM) {
 			bt_dev_err(hu->hdev, "QCA controller missed packet:%d",
 				   qca_memdump->current_seq_no);
 			rx_size = qca_memdump->received_dump;
@@ -1725,8 +1727,13 @@ static int qca_regulator_init(struct hci_uart *hu)
 	if (qcadev->bt_en) {
 		gpiod_set_value_cansleep(qcadev->bt_en, 0);
 		msleep(50);
+		/* For qca6490 also need to enable wlan gpio */
+		if (qcadev->wl_en)
+			gpiod_set_value_cansleep(qcadev->wl_en, 0);
 		gpiod_set_value_cansleep(qcadev->bt_en, 1);
 		msleep(50);
+		if (qcadev->wl_en)
+			gpiod_set_value_cansleep(qcadev->wl_en, 1);
 		if (qcadev->sw_ctrl) {
 			sw_ctrl_state = gpiod_get_value_cansleep(qcadev->sw_ctrl);
 			bt_dev_dbg(hu->hdev, "SW_CTRL is %d", sw_ctrl_state);
@@ -1858,6 +1865,10 @@ static int qca_setup(struct hci_uart *hu)
 
 	case QCA_WCN7850:
 		soc_name = "wcn7850";
+		break;
+
+	case QCA_QCA6490:
+		soc_name = "qca6490";
 		break;
 
 	default:
@@ -2035,6 +2046,20 @@ static const struct qca_device_data qca_soc_data_wcn3998 __maybe_unused = {
 static const struct qca_device_data qca_soc_data_qca6390 __maybe_unused = {
 	.soc_type = QCA_QCA6390,
 	.num_vregs = 0,
+};
+
+static const struct qca_device_data qca_soc_data_qca6490 __maybe_unused = {
+	.soc_type = QCA_WCN6855,
+	/*.vregs = (struct qca_vreg []) {
+		{ "vddio", 1800000 },
+		{ "vddaon", 950000 },
+		{ "vdddig", 950000 },
+		{ "vddrfa1", 1880000 },
+		{ "vddrfa2", 1350000 },
+		{ "vddasd", 2800000 },
+	},*/
+	.num_vregs = 0,
+	//.capabilities = QCA_CAP_WIDEBAND_SPEECH | QCA_CAP_VALID_LE_STATES,
 };
 
 static const struct qca_device_data qca_soc_data_wcn6750 __maybe_unused = {
@@ -2291,6 +2316,15 @@ static int qca_serdev_probe(struct serdev_device *serdev)
 			power_ctrl_enabled = false;
 		}
 
+		/* QCA6490 needs wlan and bluetooth enabled together */
+		qcadev->wl_en = devm_gpiod_get_optional(&serdev->dev, "wlan",
+					       GPIOD_OUT_LOW);
+		if (IS_ERR_OR_NULL(qcadev->wl_en) &&
+		    data->soc_type == QCA_QCA6490) {
+			dev_err(&serdev->dev, "failed to acquire WL_EN gpio\n");
+			power_ctrl_enabled = false;
+		}
+
 		qcadev->sw_ctrl = devm_gpiod_get_optional(&serdev->dev, "swctrl",
 					       GPIOD_IN);
 		if (IS_ERR_OR_NULL(qcadev->sw_ctrl) &&
@@ -2402,7 +2436,8 @@ static void qca_serdev_shutdown(struct device *dev)
 	const u8 ibs_wake_cmd[] = { 0xFD };
 	const u8 edl_reset_soc_cmd[] = { 0x01, 0x00, 0xFC, 0x01, 0x05 };
 
-	if (qcadev->btsoc_type == QCA_QCA6390) {
+	if ((qcadev->btsoc_type == QCA_QCA6390) ||
+	    (qcadev->btsoc_type == QCA_QCA6490)) {
 		if (test_bit(QCA_BT_OFF, &qca->flags) ||
 		    !test_bit(HCI_RUNNING, &hdev->flags))
 			return;
@@ -2561,6 +2596,7 @@ static SIMPLE_DEV_PM_OPS(qca_pm_ops, qca_suspend, qca_resume);
 static const struct of_device_id qca_bluetooth_of_match[] = {
 	{ .compatible = "qcom,qca6174-bt" },
 	{ .compatible = "qcom,qca6390-bt", .data = &qca_soc_data_qca6390},
+	{ .compatible = "qcom,qca6490-bt", .data = &qca_soc_data_qca6490},
 	{ .compatible = "qcom,qca9377-bt" },
 	{ .compatible = "qcom,wcn3988-bt", .data = &qca_soc_data_wcn3988},
 	{ .compatible = "qcom,wcn3990-bt", .data = &qca_soc_data_wcn3990},
@@ -2576,6 +2612,7 @@ MODULE_DEVICE_TABLE(of, qca_bluetooth_of_match);
 
 #ifdef CONFIG_ACPI
 static const struct acpi_device_id qca_bluetooth_acpi_match[] = {
+	{ "QCOM6490", (kernel_ulong_t)&qca_soc_data_qca6490 },
 	{ "QCOM6390", (kernel_ulong_t)&qca_soc_data_qca6390 },
 	{ "DLA16390", (kernel_ulong_t)&qca_soc_data_qca6390 },
 	{ "DLB16390", (kernel_ulong_t)&qca_soc_data_qca6390 },
