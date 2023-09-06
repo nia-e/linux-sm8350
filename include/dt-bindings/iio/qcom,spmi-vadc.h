@@ -245,6 +245,7 @@
 #define ADC7_CC1_ID				0x13
 #define ADC7_VREF_BAT_THERM			0x15
 #define ADC7_IIN_FB				0x17
+#define ADC7_ICHG_FB				0xa1
 
 /* 30k pull-up1 */
 #define ADC7_AMUX_THM1_30K_PU			0x24
