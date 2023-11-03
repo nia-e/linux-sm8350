@@ -2971,6 +2971,38 @@
 				bias-disable;
 			};
 
+			qup_uart18_4pin: qup-uart18-4pin-state {
+				cts-pins {
+					pins = "gpio68";
+					function = "qup18";
+					drive-strength = <2>;
+					bias-bus-hold;
+				};
+
+				rts-pins {
+					pins = "gpio69";
+					function = "qup18";
+					drive-strength = <2>;
+					bias-disable;
+				};
+
+				tx-pins {
+					pins = "gpio70";
+					function = "qup18";
+					drive-strength = <2>;
+					bias-disable;
+					output-enable;
+				};
+
+				rx-pins {
+					pins = "gpio71";
+					function = "qup18";
+					drive-strength = <2>;
+					bias-disable;
+					output-disable;
+				};
+			};
+
 			qup_i2c0_default: qup-i2c0-default-state {
 				pins = "gpio4", "gpio5";
 				function = "qup0";
