@@ -24,6 +24,12 @@
 	chassis-type = "handset";
 	interrupt-parent = <&intc>;
 
+	aliases {
+		bluetooth = &bluetooth;
+		serial0 = &uart2;
+		serial1 = &uart18;
+	};
+
 	bat: battery {
 		compatible = "simple-battery";
 		device-chemistry = "lithium-ion";
@@ -53,6 +59,33 @@
 				 <&gcc GCC_DISP_SF_AXI_CLK>;
 		};
 	};
+
+	cnss_supply: cnss-supply {
+		compatible = "regulator-fixed";
+		regulator-name = "wcnss_regulator";
+		regulator-min-microvolt = <1900000>;
+		regulator-max-microvolt = <1900000>;
+
+		enable-active-high;
+
+		pinctrl-0 = <&cnss_regulator_active>;
+		pinctrl-names = "default";
+
+		gpio = <&tlmm 201 GPIO_ACTIVE_HIGH>;
+	};
+
+	/*
+	gpio_i2c4: gpio-i2c {
+		compatible = "i2c-gpio";
+		sda-gpios = <&tlmm 20 (GPIO_ACTIVE_HIGH|GPIO_OPEN_DRAIN)>;
+		scl-gpios = <&tlmm 21 (GPIO_ACTIVE_HIGH|GPIO_OPEN_DRAIN)>;
+		//#address-cells = <1>;
+		//#size-cells = <0>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&qup_i2c4_default>, <&tp_enable_2v8>;
+	};
+	*/
 
 	gpio-keys {
 		compatible = "gpio-keys";
@@ -104,6 +137,27 @@
 				};
 			};
 		};
+	};
+
+	qca6490_pd: qca6490 {
+		compatible = "qcom,qca6490";
+		#power-domain-cells = <0>;
+
+		vddaonbt-supply = <&pm8350_s11>;
+		vddaonwl-supply = <&pmr735a_s2>;
+		vddasd-supply = <&pmr735a_l7>;
+		vddrfa1-supply = <&pm8350c_s1>;
+		vddrfa2-supply = <&pm8350_s12>;
+		vddrfa3-supply = <&pm8350c_s1>;
+		vddpcie1-supply = <&cnss_supply>;
+		vddpcie2-supply = <&pm8350c_s1>;
+		vddio-supply = <&pm8350_s10>;
+
+		pinctrl-0 = <&cnss_wlan_sleep>;
+		pinctrl-1 = <&cnss_wlan_active>;
+		pinctrl-names = "default", "active";
+
+		status = "disabled";
 	};
 
 	display_panel_avdd: regulator-display {
@@ -403,9 +457,23 @@
 		};
 	};
 
-	/* pm8350b has one regulator here; unused for now */
-
 	regulators-2 {
+		compatible = "qcom,pm8350b-rpmh-regulators";
+		qcom,pmic-id = "d";
+
+		vdd-l1-supply = <&pm8350_s12>;
+
+		pm8350b_l1: ldo1 {
+			regulator-name = "pm8350b_l1";
+			regulator-min-microvolt = <1200000>;
+			regulator-max-microvolt = <1200000>;
+			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
+			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
+						   RPMH_REGULATOR_MODE_HPM>;
+		};
+	};
+
+	regulators-3 {
 		compatible = "qcom,pmr735a-rpmh-regulators";
 		qcom,pmic-id = "e";
 
@@ -486,6 +554,24 @@
 	status = "okay";
 };
 
+&dispcc {
+	//status = "okay";
+};
+
+&gmu {
+	/* FIXME: check_dtbs complains */
+	//firmware-name = "qcom/sm8350/lemonade/a660_gmu.bin";
+};
+
+&gpu {
+	//status = "okay";
+
+	zap-shader {
+		memory-region = <&pil_gpu_mem>;
+		firmware-name = "qcom/sm8350/lemonade/a660_zap.mbn";
+	};
+};
+
 &i2c2 {
 	clock-frequency = <100000>;
 	status = "okay";
@@ -496,6 +582,7 @@
 		monitored-battery = <&bat>;
 	};
 };
+
 
 &i2c4 {
 	clock-frequency = <400000>;
@@ -554,14 +641,74 @@
 	status = "okay";
 };
 
+&mdss {
+	//status = "okay";
+};
+
+&mdss_dp {
+	//status = "okay";
+
+	ports {
+		port@1 {
+			reg = <1>;
+
+			endpoint {
+			};
+		};
+	};
+};
+
+&mdss_dsi0 {
+	vdda-supply = <&pm8350_l6>;
+
+	//status = "okay";
+
+	/* Common properties for OnePlus 9 and 9 Pro */
+	display_panel: panel-1@0 {
+		reg = <0>;
+
+		pinctrl-0 = <&sde_dsi_active &sde_te_active>;
+		pinctrl-1 = <&sde_dsi_suspend &sde_te_suspend>;
+		pinctrl-names = "default", "sleep";
+
+		reset-gpios = <&tlmm 24 GPIO_ACTIVE_LOW>;
+
+		vdd-supply = <&pm8350c_l13>;
+		vddio-supply = <&pm8350c_l12>;
+		avdd-supply = <&display_panel_avdd>;
+		//clocks = <&rpmhcc RPMH_DIV_CLK1>;
+		//clock-names = "div_clk";
+		//clocks = <&mdss_dsi0_phy DISP_CC_MDSS_>
+
+		status = "disabled";
+
+		port {
+			panel_in: endpoint {
+				remote-endpoint = <&mdss_dsi0_out>;
+			};
+		};
+	};
+};
+
+&mdss_dsi0_out {
+	remote-endpoint = <&panel_in>;
+	data-lanes = <0 1 2 3>;
+};
+
+&mdss_dsi0_phy {
+	vdds-supply = <&pm8350_l5>;
+	//status = "okay";
+};
+
 &mpss {
 	firmware-name = "qcom/sm8350/OnePlus/lemonade/modem.mbn";
-	status = "okay";
 };
 
 &pcie0 {
-	pinctrl-0 = <&pcie0_default_state>;
-	pinctrl-names = "default";
+	pinctrl-0 = <&pcie0_default_state>;//, <&pcie0_sleep_state>;
+	pinctrl-names = "default";//, "sleep";
+
+	//power-domains = <&qca6490_pd>;
 
 	perst-gpios = <&tlmm 94 GPIO_ACTIVE_HIGH>;
 	wake-gpios = <&tlmm 96 GPIO_ACTIVE_HIGH>;
@@ -572,6 +719,8 @@
 &pcie0_phy {
 	vdda-phy-supply = <&pm8350_l5>;
 	vdda-pll-supply = <&pm8350_l6>;
+
+	power-domains = <&qca6490_pd>;
 
 	status = "okay";
 };
@@ -865,10 +1014,15 @@
 };
 
 &pon_resin {
-	linux,code = <KEY_VOLUMEUP>;
+	linux,code = <KEY_VOLUMEDOWN>;
 	status = "okay";
 };
-
+/*
+&qup_i2c4_default {
+	function = "gpio";
+	bias-disable;
+};
+*/
 &qupv3_id_0 {
 	status = "okay";
 };
@@ -919,6 +1073,74 @@
 	/* Fingerprint sensor and NFC-related pins shouldn't be touched by us */
 	gpio-reserved-ranges = <52 8>;
 
+	bt_active: bt-active-state {
+		pins = "gpio65";
+		function = "gpio";
+		drive-strength = <16>;
+		output-high;
+		bias-pull-up;
+	};
+
+	bt_sleep: bt-sleep-state {
+		pins = "gpio65";
+		function = "gpio";
+		drive-strength = <2>;
+		output-low;
+		bias-pull-down;
+	};
+
+	cnss_regulator_active: cnss-regulator-active-state {
+		pins = "gpio201";
+		function = "gpio";
+		drive-strength = <16>;
+		bias-pull-down;
+		output-low;
+	};
+
+	cnss_wlan_active: cnss-wlan-active-state {
+		pins = "gpio64";
+		function = "gpio";
+		drive-strength = <16>;
+		output-high;
+		bias-pull-up;
+	};
+
+	cnss_wlan_sleep: cnss-wlan-sleep-state {
+		pins = "gpio64";
+		function = "gpio";
+		drive-strength = <2>;
+		output-low;
+		bias-pull-down;
+	};
+
+	sde_dsi_active: sde-dsi-active-state {
+		pins = "gpio24";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-disable;
+	};
+
+	sde_dsi_suspend: sde-dsi-sleep-state {
+		pins = "gpio24";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
+
+	sde_te_active: sde-te-active-state {
+		pins = "gpio82";
+		function = "mdp_vsync";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
+
+	sde_te_suspend: sde-te-sleep-state {
+		pins = "gpio82";
+		function = "mdp_vsync";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
+
 	pcie0_default_state: pcie0-default-state {
 		perst-pins {
 			pins = "gpio94";
@@ -940,13 +1162,13 @@
 			drive-strength = <2>;
 			bias-pull-up;
 		};
+	};
 
-		sleep-pins {
-			pins = "gpio95";
-			function = "gpio";
-			drive-strength = <2>;
-			bias-pull-up;
-		};
+	pcie0_sleep_state: pcie0-sleep-state {
+		pins = "gpio95";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
 	};
 
 	pcie1_default_state: pcie1-default-state {
@@ -969,8 +1191,15 @@
 			function = "gpio";
 			drive-strength = <2>;
 			bias-pull-up;
-			/* wil6210_refclk_en_pin lives here also */
 		};
+	};
+
+	/* XXX: Is this correct? */
+	pcie1_sleep_state: pcie1-sleep-state {
+		pins = "gpio98";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
 	};
 
 	/* Modem-related pin common on both devices */
@@ -1002,6 +1231,43 @@
 		function = "gpio";
 		drive-strength = <2>;
 		bias-pull-down;
+	};
+};
+
+&uart2 {
+	status = "okay";
+};
+
+&uart18 {
+	pinctrl-0 = <&qup_uart18_4pin>;
+	status = "okay";
+
+	bluetooth: bluetooth {
+		compatible = "qcom,qca6490-bt";
+
+		pinctrl-0 = <&bt_active>;
+		pinctrl-1 = <&bt_sleep>;
+		pinctrl-names = "default", "sleep";
+
+		/* QCA6490 requires wlan and bluetooth be enabled simultaneously */
+		enable-gpios = <&tlmm 65 GPIO_ACTIVE_HIGH>;
+		wlan-gpios = <&tlmm 64 GPIO_ACTIVE_HIGH>;
+		swctrl-gpios = <&tlmm 153 GPIO_ACTIVE_HIGH>;
+
+		power-domains = <&qca6490_pd>;
+
+		//vddio-supply = <&pm8350_s10>;
+		//vddaon-supply = <&pm8350_s11>;
+		//vddasd-supply = <&pmr735a_l7>;
+		//vdddig-supply = <&pm8350_s11>;
+		//vddrfa1-supply = <&pm8350c_s1>;
+		//vddrfa2-supply = <&pm8350_s12>;
+		//vddpcie1-supply = <&pm8350_s12>;
+		//vddpcie2-supply = <&pm8350c_s1>;
+
+		max-speed = <3200000>;
+
+		//status = "disabled";
 	};
 };
 

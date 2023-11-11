@@ -36,6 +36,16 @@
 		    <&rf_cable_ant3_active>,
 		    <&rf_cable_ant7_active>;
 	pinctrl-names = "default";
+	status = "okay";
+};
+
+&qca6490_pd {
+	rf-gpios = <&tlmm 165 0>,
+		   <&tlmm 27 0>,
+		   <&tlmm 92 0>,
+		   <&tlmm 44 0>,
+		   <&tlmm 155 0>;
+	status = "okay";
 };
 
 &tlmm {
@@ -68,18 +78,18 @@
 		bias-pull-up;
 	};
 
-	tp_rst_suspend: tp-rst-suspend-state {
-		pins = "gpio22";
-		function = "gpio";
-		drive-strength = <2>;
-		bias-pull-down;
-	};
-
-	tp_enable_2v8: tp-enable-2v8-state {
+	tp_enable_2v8: tp-2v8-enable-state {
 		pins = "gpio74";
 		function = "gpio";
 		drive-strength = <8>;
 		bias-pull-up;
 		output-high;
+	};
+
+	tp_rst_suspend: tp-rst-suspend-state {
+		pins = "gpio22";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-down;
 	};
 };
