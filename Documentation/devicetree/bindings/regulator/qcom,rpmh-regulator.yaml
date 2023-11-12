@@ -71,6 +71,7 @@ properties:
       - qcom,pm8150-rpmh-regulators
       - qcom,pm8150l-rpmh-regulators
       - qcom,pm8350-rpmh-regulators
+      - qcom,pm8350b-rpmh-regulators
       - qcom,pm8350c-rpmh-regulators
       - qcom,pm8450-rpmh-regulators
       - qcom,pm8550-rpmh-regulators
@@ -286,6 +287,15 @@ allOf:
         vdd-l8-supply: true
       patternProperties:
         "^vdd-s([1-9]|1[0-2])-supply$": true
+
+  - if:
+      properties:
+        compatible:
+          enum:
+            - qcom,pm8350b-rpmh-regulators
+    then:
+      properties:
+        vdd-l1-supply: true
 
   - if:
       properties:
